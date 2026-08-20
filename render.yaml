@@ -11,9 +11,9 @@ services:
       - key: PORT
         value: 8000
       - key: DATABASE_URL
-        fromDatabase:
-          name: vajra-database
-          property: connectionString
+        value: postgresql://user:password@host/database
+        # Replace with your Neon database connection string
+        # Get it from: https://console.neon.tech
     healthCheckPath: /health
 
   # Frontend Service (Next.js Static Export)
@@ -28,9 +28,3 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: https://vajra-backend.onrender.com
     healthCheckPath: /
-
-# PostgreSQL Database Service (Free for 90 days, then paid)
-databases:
-  - name: vajra-database
-    databaseName: vajra
-    user: vajra_user

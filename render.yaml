@@ -8,10 +8,26 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
-      - key: PORT
-        value: 8000
       - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_WzCOhSJ0dn6f@ep-nameless-bird-ay266zed.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require
+        value: postgresql://neondb_owner:npg_WzCOhSJ0dn6f@ep-nameless-bird-ay266zed-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: SECRET_KEY
+        value: qHpvQjjfYQ0jrsiwvNQ0vzAw9OGKM36ucCzZadzMED4
+      - key: ALIENVAULT_OTX_API_KEY
+        value: 9f6d7781cdec6d534115d78aaafccf5655d641bfca98777f22b9af052d9bb7ee
+      - key: RANSOMWARE_LIVE_API_KEY
+        value: 0328d2ff-e982-423c-93fd-2584de26596c
+      - key: URLSCAN_API_KEY
+        value: 019f6a87-5f80-77ee-b8bb-09e3831031ed
+      - key: GEMINI_API_KEY
+        value: AQ.Ab8RN6JTCjBVeGnyUuetAjJoSq59uYao2FnHHMepGs4sJ1bDRQ
+      - key: NEWS_API_KEY
+        value: XdpAjNVcHWu8nBm589sP91xWrMQ5jlZlltMGvVHH
+      - key: WHOISXML_API_KEY
+        value: at_rdFGNCHzLhwpNn0ExRAE2Uj3fQRcu
+      - key: GRIDINSOFT_API_KEY
+        value: SN1SzVtqGmQFJksqsEMV3CtosPm8dsQk1m41AyPsubMVnJqPYbn4oQOwzHkKSgkZ
+      - key: NVD_API_KEY
+        value: 7bf609e4-78b9-43d4-8b81-be3399af1629
     healthCheckPath: /health
 
   # Frontend Service (Next.js Static Export)

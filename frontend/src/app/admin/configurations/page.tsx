@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
@@ -29,15 +29,7 @@ export default function ConfigurationManagement() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
 
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'Admin') {
-      router.push('/')
-      return
-    }
-    fetchConfigurations()
-  }, [isAuthenticated, user, router])
-
-  const fetchConfigurations = async () => {
+  const fetchConfigurations = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_URL}/api/admin/configurations`, {
@@ -56,7 +48,15 @@ export default function ConfigurationManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'Admin') {
+      router.push('/')
+      return
+    }
+    fetchConfigurations()
+  }, [isAuthenticated, user, router, fetchConfigurations])
 
   const handleCreateConfig = async () => {
     try {

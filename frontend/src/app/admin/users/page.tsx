@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
@@ -32,15 +32,7 @@ export default function UserManagement() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
 
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'Admin') {
-      router.push('/')
-      return
-    }
-    fetchUsers()
-  }, [isAuthenticated, user, router])
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_URL}/api/admin/users`, {
@@ -71,7 +63,15 @@ export default function UserManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'Admin') {
+      router.push('/')
+      return
+    }
+    fetchUsers()
+  }, [isAuthenticated, user, router, fetchUsers])
 
   const handleUpdateRole = async () => {
     if (!selectedUser) return

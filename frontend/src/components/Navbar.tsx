@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Bell, Globe, Search, Bot, User, LogOut, X, Send, Loader2, ChevronDown, Download } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
@@ -148,20 +148,7 @@ export default function Navbar() {
 
   const languages = ['English', 'Spanish', 'French', 'German', 'Japanese']
 
-  useEffect(() => {
-    fetchNotifications()
-    fetchUnreadCount()
-    
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(() => {
-      fetchNotifications()
-      fetchUnreadCount()
-    }, 30000)
-    
-    return () => clearInterval(interval)
-  }, [token])
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_URL}/api/notifications`, {
@@ -176,9 +163,9 @@ export default function Navbar() {
     } catch (error) {
       console.error('Error fetching notifications:', error)
     }
-  }
+  }, [token])
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_URL}/api/notifications/unread-count`, {
@@ -193,7 +180,20 @@ export default function Navbar() {
     } catch (error) {
       console.error('Error fetching unread count:', error)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    fetchNotifications()
+    fetchUnreadCount()
+    
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(() => {
+      fetchNotifications()
+      fetchUnreadCount()
+    }, 30000)
+    
+    return () => clearInterval(interval)
+  }, [fetchNotifications, fetchUnreadCount])
 
   const markAsRead = async (notificationId: number) => {
     try {

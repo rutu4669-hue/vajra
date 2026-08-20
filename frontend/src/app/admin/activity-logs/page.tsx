@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
@@ -29,19 +29,7 @@ export default function ActivityLogsPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
 
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'Admin') {
-      router.push('/')
-      return
-    }
-    fetchLogs()
-    
-    const interval = setInterval(fetchLogs, 10000)
-    
-    return () => clearInterval(interval)
-  }, [isAuthenticated, user, router, filter, selectedUserId])
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       let url = `${API_URL}/api/admin/activity-logs`
@@ -90,7 +78,19 @@ export default function ActivityLogsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token, filter, selectedUserId])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'Admin') {
+      router.push('/')
+      return
+    }
+    fetchLogs()
+    
+    const interval = setInterval(fetchLogs, 10000)
+    
+    return () => clearInterval(interval)
+  }, [isAuthenticated, user, router, fetchLogs])
 
   const getActionColor = (action: string) => {
     switch (action) {

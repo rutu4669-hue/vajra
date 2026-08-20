@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
@@ -25,15 +25,7 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
 
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'Admin') {
-      router.push('/')
-      return
-    }
-    fetchStats()
-  }, [isAuthenticated, user, router])
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_URL}/api/admin/stats`, {
@@ -68,7 +60,15 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'Admin') {
+      router.push('/')
+      return
+    }
+    fetchStats()
+  }, [isAuthenticated, user, router, fetchStats])
 
   if (loading) {
     return (

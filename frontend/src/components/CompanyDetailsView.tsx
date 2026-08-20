@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   Building2, 
@@ -83,13 +83,7 @@ export default function CompanyDetailsView() {
   const [analyzing, setAnalyzing] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  useEffect(() => {
-    if (companyId) {
-      fetchCompanyData();
-    }
-  }, [companyId]);
-
-  const fetchCompanyData = async () => {
+  const fetchCompanyData = useCallback(async () => {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const [companyRes, threatsRes, assessmentsRes] = await Promise.all([
@@ -110,7 +104,13 @@ export default function CompanyDetailsView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyId]);
+
+  useEffect(() => {
+    if (companyId) {
+      fetchCompanyData();
+    }
+  }, [companyId, fetchCompanyData]);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);

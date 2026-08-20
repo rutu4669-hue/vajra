@@ -91,7 +91,7 @@ export default function Sidebar({ collapsed, setCollapsed, sidebarWidth, setSide
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isResizing])
+  }, [isResizing, setSidebarWidth])
 
   return (
     <motion.aside

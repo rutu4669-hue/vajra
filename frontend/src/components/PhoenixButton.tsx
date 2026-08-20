@@ -342,7 +342,7 @@ export default function PhoenixButton() {
       setIsLoading(false)
       setVoiceState('idle')
     }
-  }, [router, speakReply])
+  }, [router, speakReply, stopSpeaking])
 
   // ── Start command listener ───────────────────────────────────────────────────
   const startCommandListener = useCallback(() => {
@@ -389,7 +389,7 @@ export default function PhoenixButton() {
     }, 8000)
 
     recognition.start()
-  }, [processSpeechCommand])
+  }, [processSpeechCommand, stopSpeaking])
 
   // ── Start wake word listener ─────────────────────────────────────────────────
   const startWakeWordListener = useCallback(() => {
@@ -448,9 +448,9 @@ export default function PhoenixButton() {
   useEffect(() => {
     if (voiceEnabled) startWakeWordListener()
     return () => { if (!voiceEnabled) stopAll() }
-  }, [voiceEnabled])
+  }, [voiceEnabled, startWakeWordListener, stopAll])
 
-  useEffect(() => { return () => { stopAll() } }, [])
+  useEffect(() => { return () => { stopAll() } }, [stopAll])
 
   // ── Text send ────────────────────────────────────────────────────────────────
   const sendTextMessage = async (text: string) => {

@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function isAdmin() {
+      return hasRole('Admin');
+    }
+    
+    function isSOCAnalyst() {
+      return hasRole('SOC Analyst') || isAdmin();
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated();
+    }
+    
+    // Companies collection
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+    
+    // Company threats collection
+    match /company_threats/{threatId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+    
+    // Company risk assessments collection
+    match /company_risk_assessments/{assessmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+    
+    // Alerts collection
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+    
+    // Ransomware incidents collection
+    match /ransomware_incidents/{incidentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+    
+    // Attack events collection
+    match /attack_events/{eventId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+    
+    // Activity logs collection
+    match /activity_logs/{logId} {
+      allow read: if isAuthenticated() && (isOwner(request.auth.uid) || isAdmin());
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAuthenticated();
+    }
+    
+    // Threat feeds collection
+    match /threat_feeds/{feedId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      allow create: if isAdmin();
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+                resource.data.userId == request.auth.uid;
+      allow write: if isAuthenticated() && 
+                  resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+    }
+    
+    // Settings collection (user-specific)
+    match /settings/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+    
+    // Reports collection
+    match /reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSOCAnalyst();
+      allow create: if isAdmin() || isSOCAnalyst();
+    }
+  }
+}

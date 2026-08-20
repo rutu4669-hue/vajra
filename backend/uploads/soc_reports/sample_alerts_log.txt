@@ -1,0 +1,20 @@
+2024-08-19 02:34:15 UTC [CRITICAL] ALERT-001: SQL Injection Attempt detected from IP 192.168.1.100 targeting Customer Database Server. Blocked by WAF.
+2024-08-19 03:15:22 UTC [CRITICAL] ALERT-002: Malware detection on workstation WS-045. Emotet variant identified. System isolated.
+2024-08-19 04:22:10 UTC [CRITICAL] ALERT-003: Unauthorized access attempt from IP 10.0.0.55 targeting Admin Console. Brute force attack blocked.
+2024-08-19 05:45:33 UTC [HIGH] ALERT-004: Suspicious login activity detected for user admin@company.com from unusual location.
+2024-08-19 06:12:45 UTC [HIGH] ALERT-005: Data exfiltration attempt detected from file server FS-001. Transfer blocked.
+2024-08-19 07:30:18 UTC [MEDIUM] ALERT-006: Port scanning activity detected from IP range 203.0.113.0/24.
+2024-08-19 08:45:22 UTC [HIGH] ALERT-007: Phishing email campaign detected targeting finance department. 12 emails blocked.
+2024-08-19 09:15:44 UTC [CRITICAL] ALERT-008: Command injection attempt on web application. Request blocked.
+2024-08-19 10:30:15 UTC [MEDIUM] ALERT-009: Unusual DNS query patterns detected from subnet 192.168.2.0/24.
+2024-08-19 11:45:33 UTC [HIGH] ALERT-010: Privilege escalation attempt on server SRV-003. Access denied.
+2024-08-19 12:15:22 UTC [CRITICAL] ALERT-011: Ransomware signature detected on workstation WS-089. System quarantined.
+2024-08-19 13:30:45 UTC [MEDIUM] ALERT-012: Large file transfer detected from workstation WS-045 to external IP.
+2024-08-19 14:45:18 UTC [HIGH] ALERT-013: Suspicious process execution detected on server SRV-001.
+2024-08-19 15:30:33 UTC [MEDIUM] ALERT-014: Unauthorized VPN connection attempt from IP 198.51.100.55.
+2024-08-19 16:45:22 UTC [HIGH] ALERT-015: API abuse detected on public endpoint. Rate limiting applied.
+2024-08-19 17:30:15 UTC [CRITICAL] ALERT-016: Zero-day exploit attempt detected on web application. Emergency patch deployed.
+2024-08-19 18:45:44 UTC [MEDIUM] ALERT-017: Certificate validation failure detected on internal service.
+2024-08-19 19:30:33 UTC [HIGH] ALERT-018: Lateral movement attempt detected between workstations WS-045 and WS-089.
+2024-08-19 20:15:22 UTC [MEDIUM] ALERT-019: Unusual registry modification detected on multiple workstations.
+2024-08-19 21:30:45 UTC [HIGH] ALERT-020: Data breach attempt detected on customer database. Access blocked.

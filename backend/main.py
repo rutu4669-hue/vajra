@@ -42,18 +42,32 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up VAJRA backend...")
-    # Create database tables
-    Base.metadata.create_all(bind=engine)
+    try:
+        # Create database tables
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}")
     
-        
-    # Start scheduler
-    scheduler.start()
+    try:
+        # Start scheduler
+        scheduler.start()
+        logger.info("Scheduler started successfully")
+    except Exception as e:
+        logger.error(f"Scheduler startup error: {e}")
+    
     logger.info("Backend started successfully")
     yield
     # Shutdown
     logger.info("Shutting down VAJRA backend...")
-    scheduler.shutdown()
-    await websocket_manager.disconnect_all()
+    try:
+        scheduler.shutdown()
+    except Exception as e:
+        logger.error(f"Scheduler shutdown error: {e}")
+    try:
+        await websocket_manager.disconnect_all()
+    except Exception as e:
+        logger.error(f"WebSocket disconnect error: {e}")
 
 app = FastAPI(
     title="VAJRA API",

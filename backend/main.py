@@ -100,16 +100,7 @@ app.include_router(websocket_router)
 async def health_check():
     return {"status": "healthy"}
 
-# Host Frontend and Backend on Single Port
-import os
-from fastapi.staticfiles import StaticFiles
-
-frontend_out = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "out")
-if os.path.exists(frontend_out):
-    logger.info(f"Hosting frontend static export from {frontend_out} on single port")
-    app.mount("/", StaticFiles(directory=frontend_out, html=True), name="frontend")
-else:
-    @app.get("/")
-    async def root():
-        return {"message": "VAJRA API", "status": "running"}
+@app.get("/")
+async def root():
+    return {"message": "VAJRA API", "status": "running", "version": "1.0.0"}
 

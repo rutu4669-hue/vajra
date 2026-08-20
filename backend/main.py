@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 import logging
 from logging.config import dictConfig
 
-from database.database import engine, Base
+from database.database import engine, Base, SessionLocal
+from models.user import User
+from auth.password_handler import hash_password
 from websocket.websocket_manager import websocket_manager
 from routes import auth, dashboard, threat, ransomware, news, reports, ai, alerts, threat_actors, industries, notifications, domain, domain_analysis, companies, soc
 from admin import routes as admin_routes
@@ -46,6 +48,33 @@ async def lifespan(app: FastAPI):
         # Create database tables
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
+        
+        # Seed default admin user
+        db = SessionLocal()
+        try:
+            admin_user = db.query(User).filter(User.email == "admin@indigo.com").first()
+            if not admin_user:
+                admin_user = User(
+                    email="admin@indigo.com",
+                    name="Admin User",
+                    hashed_password=hash_password("admin123"),
+                    role="Admin",
+                    is_active=True
+                )
+                db.add(admin_user)
+                db.commit()
+                logger.info("Default admin user created successfully")
+            else:
+                admin_user.hashed_password = hash_password("admin123")
+                admin_user.role = "Admin"
+                admin_user.is_active = True
+                db.commit()
+                logger.info("Default admin user updated/verified successfully")
+        except Exception as seed_err:
+            logger.error(f"Error seeding admin user: {seed_err}")
+            db.rollback()
+        finally:
+            db.close()
     except Exception as e:
         logger.error(f"Database initialization error: {e}")
     

@@ -7,14 +7,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-raw_db_url = os.getenv("DATABASE_URL")
+DEFAULT_NEON_DB = "postgresql://neondb_owner:npg_WzCOhSJ0dn6f@ep-nameless-bird-ay266zed-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+raw_db_url = os.getenv("DATABASE_URL") or DEFAULT_NEON_DB
 
-if not raw_db_url or "sqlite:///./ai_security.db" in raw_db_url:
-    db_file_path = os.path.join(BASE_DIR, "ai_security.db")
-    DATABASE_URL = f"sqlite:///{db_file_path}"
+if not raw_db_url or raw_db_url == "sqlite:///./ai_security.db":
+    DATABASE_URL = DEFAULT_NEON_DB
 else:
     DATABASE_URL = raw_db_url
-    # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 

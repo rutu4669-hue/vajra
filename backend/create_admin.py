@@ -5,6 +5,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Set the DATABASE_URL to Neon before importing database
+os.environ["DATABASE_URL"] = "postgresql://neondb_owner:npg_WzCOhSJ0dn6f@ep-nameless-bird-ay266zed-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
 from database.database import SessionLocal, engine, Base
 from models.user import User
 from auth.password_handler import hash_password

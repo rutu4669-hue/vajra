@@ -7,6 +7,6 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://1f78f357-11bb-48c6-852f-898b4b59f22f.railway.app/api/:splat"
+  to = "https://vajra-backend.onrender.com/api/:splat"
   status = 200
   force = true

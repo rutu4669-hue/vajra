@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vajra-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_WzCOhSJ0dn6f@ep-nameless-bird-ay266zed-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: SECRET_KEY
+        value: qHpvQjjfYQ0jrsiwvNQ0vzAw9OGKM36ucCzZadzMED4
+      - key: GOOGLE_API_KEY
+        value: AQ.Ab8RN6JTCjBVeGnyUuetAjJoSq59uYao2FnHHMepGs4sJ1bDRQ
+      - key: PYTHON_VERSION
+        value: 3.11

@@ -112,7 +112,7 @@ app.include_router(websocket_router)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": "2026-08-20"}
+    return {"status": "healthy", "timestamp": "2026-08-20T10:00:00Z"}
 
 @app.get("/")
 async def root():

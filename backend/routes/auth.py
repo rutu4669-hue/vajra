@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from database.database import get_db
 from models.user import User
@@ -9,7 +9,7 @@ from auth.jwt_handler import create_access_token, create_refresh_token, verify_t
 router = APIRouter()
 
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate, db: Session = Depends(get_db)):
+async def register(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
@@ -30,6 +30,21 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     
+    # Log registration activity
+    try:
+        from services.activity_logger import ActivityLogger
+        logger = ActivityLogger(db)
+        client_ip = request.client.host if request.client else None
+        logger.log_activity(
+            user_id=db_user.id,
+            action="USER_REGISTER",
+            resource="user",
+            details=f"User registered successfully: {db_user.email}",
+            ip_address=client_ip
+        )
+    except Exception:
+        pass
+
     # Sync user to Firestore
     try:
         from services.firebase_service import firebase_service
@@ -40,7 +55,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @router.post("/login", response_model=Token)
-async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+async def login(user_credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
     # Find user
     user = db.query(User).filter(User.email == user_credentials.email).first()
     if not user:
@@ -56,6 +71,21 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password"
         )
     
+    # Log login activity
+    try:
+        from services.activity_logger import ActivityLogger
+        logger = ActivityLogger(db)
+        client_ip = request.client.host if request.client else None
+        logger.log_activity(
+            user_id=user.id,
+            action="USER_LOGIN",
+            resource="user",
+            details=f"User logged in successfully: {user.email}",
+            ip_address=client_ip
+        )
+    except Exception:
+        pass
+
     # Create tokens directly
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})

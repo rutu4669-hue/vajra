@@ -10,6 +10,10 @@ services:
         value: 3.11
       - key: PORT
         value: 8000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vajra-database
+          property: connectionString
     healthCheckPath: /health
 
   # Frontend Service (Next.js Static Export)
@@ -25,9 +29,8 @@ services:
         value: https://vajra-backend.onrender.com
     healthCheckPath: /
 
-# Optional: PostgreSQL Database Service
-# Uncomment if you want to use PostgreSQL instead of SQLite
-# - type: pserv
-#   name: vajra-database
-#   databaseName: vajra
-#   user: vajra_user
+# PostgreSQL Database Service (Free for 90 days, then paid)
+databases:
+  - name: vajra-database
+    databaseName: vajra
+    user: vajra_user

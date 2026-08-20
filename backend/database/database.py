@@ -14,12 +14,15 @@ if not raw_db_url or "sqlite:///./ai_security.db" in raw_db_url:
     DATABASE_URL = f"sqlite:///{db_file_path}"
 else:
     DATABASE_URL = raw_db_url
+    # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # For SQLite, we need to check_same_thread=False
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=5, max_overflow=10)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

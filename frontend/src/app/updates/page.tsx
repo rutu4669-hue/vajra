@@ -8,6 +8,7 @@ import { RefreshCw, Clock, AlertTriangle, CheckCircle, Info, TrendingUp } from '
 
 export default function UpdatesPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(200)
   const [updates, setUpdates] = useState<any[]>([])
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function UpdatesPage() {
 
   return (
     <div className="flex min-h-screen bg-background overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} sidebarWidth={sidebarWidth} setSidebarWidth={setSidebarWidth} />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-[300px]'} overflow-hidden`}>
         <Navbar />
         <main className="flex-1 overflow-auto p-6">

@@ -8,6 +8,7 @@ import { Database, Activity, Globe, Shield, TrendingUp } from 'lucide-react'
 
 export default function DataSourcesPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(200)
   const [feeds, setFeeds] = useState<any[]>([])
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function DataSourcesPage() {
 
   return (
     <div className="flex min-h-screen bg-background overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} sidebarWidth={sidebarWidth} setSidebarWidth={setSidebarWidth} />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-[300px]'} overflow-hidden`}>
         <Navbar />
         <main className="flex-1 overflow-auto p-6">

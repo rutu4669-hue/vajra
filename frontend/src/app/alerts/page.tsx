@@ -10,6 +10,7 @@ import { domainService } from '@/services/domain.service'
 
 export default function AlertsPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(200)
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -255,7 +256,7 @@ export default function AlertsPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen bg-background overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} sidebarWidth={sidebarWidth} setSidebarWidth={setSidebarWidth} />
         <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-[300px]'} overflow-hidden`}>
           <Navbar />
           <main className="flex-1 overflow-auto p-6">
@@ -272,7 +273,7 @@ export default function AlertsPage() {
 
   return (
     <div className="flex min-h-screen bg-background overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} sidebarWidth={sidebarWidth} setSidebarWidth={setSidebarWidth} />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-[300px]'} overflow-hidden`}>
         <Navbar />
         <main className="flex-1 overflow-auto p-6">

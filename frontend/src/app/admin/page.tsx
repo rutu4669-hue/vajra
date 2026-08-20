@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex min-h-screen bg-background">
-        <Sidebar collapsed={false} setCollapsed={() => {}} />
+        <Sidebar collapsed={false} setCollapsed={() => {}} sidebarWidth={200} setSidebarWidth={() => {}} />
         <div className="flex-1 flex flex-col ml-64">
           <Navbar />
           <main className="flex-1 flex items-center justify-center">

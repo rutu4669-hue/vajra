@@ -99,11 +99,19 @@ class OTPService:
             msg.attach(MIMEText(text_body, "plain"))
             msg.attach(MIMEText(html_body, "html"))
 
-            with smtplib.SMTP(smtp_server, smtp_port, timeout=5) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(sender_email, email, msg.as_string())
-            logger.info(f"MFA OTP email sent successfully to {email}")
+            # Try SSL (Port 465) first (preferred on cloud environments like Render), fallback to TLS (Port 587)
+            try:
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender_email, email, msg.as_string())
+                logger.info(f"MFA OTP email sent successfully to {email} via SSL:465")
+            except Exception as ssl_err:
+                logger.warning(f"SSL:465 email dispatch failed ({ssl_err}); trying TLS:587...")
+                with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender_email, email, msg.as_string())
+                logger.info(f"MFA OTP email sent successfully to {email} via TLS:587")
         except Exception as e:
             logger.error(f"Failed to send MFA email to {email}: {e}")
 

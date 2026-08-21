@@ -35,7 +35,7 @@ services:
       - key: SMTP_USERNAME
         value: chandekarsujal884@gmail.com
       - key: SMTP_PASSWORD
-        value: souxkofxpzvjvsug
+        value: ylgmgtoenfuvhazo
       - key: SENDER_EMAIL
         value: chandekarsujal884@gmail.com
     healthCheckPath: /health

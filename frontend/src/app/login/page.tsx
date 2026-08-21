@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Shield, Mail, Lock, User, KeyRound, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Shield, Mail, Lock, User, KeyRound, ArrowLeft, RefreshCw, CheckCircle } from 'lucide-react'
 import { authService } from '../../services/auth.service'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [infoMessage, setInfoMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const router = useRouter()
   const setAuth = useAuthStore((state) => state.setAuth)
@@ -29,6 +30,7 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     setInfoMessage('')
+    setSuccessMessage('')
 
     try {
       if (isMfaStep) {
@@ -36,6 +38,7 @@ export default function LoginPage() {
         console.log('Verifying MFA OTP code:', otpCode)
         const tokenResponse = await authService.verifyOtp(email, otpCode, mfaSession)
         console.log('MFA Verification Success:', tokenResponse)
+        setSuccessMessage('Login successful! Redirecting to dashboard...')
         setAuth(tokenResponse.user, tokenResponse.access_token, tokenResponse.refresh_token)
         window.location.href = '/'
       } else if (isLogin) {
@@ -47,11 +50,13 @@ export default function LoginPage() {
         if (response.mfa_required) {
           setIsMfaStep(true)
           setMfaSession(response.mfa_session || '')
-          setInfoMessage(response.message || 'MFA OTP verification code sent to your email.')
+          setSuccessMessage(response.message || 'Login successful! 6-digit MFA OTP code sent to your registered email.')
         } else if (response.token) {
+          setSuccessMessage('Login successful! Redirecting...')
           setAuth(response.token.user, response.token.access_token, response.token.refresh_token)
           window.location.href = '/'
         } else if (response.access_token) {
+          setSuccessMessage('Login successful! Redirecting...')
           setAuth(response.user, response.access_token, response.refresh_token)
           window.location.href = '/'
         }
@@ -59,7 +64,7 @@ export default function LoginPage() {
         // Registration
         await authService.register(email, password, name)
         setIsLogin(true)
-        setInfoMessage('Registration successful! Please login.')
+        setSuccessMessage('Registration successful! Please enter your password to login.')
       }
     } catch (err: any) {
       console.error('Auth error:', err)
@@ -72,10 +77,11 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     setLoading(true)
     setError('')
+    setSuccessMessage('')
     try {
       const res = await authService.sendOtp(email)
       setMfaSession(res.mfa_session || mfaSession)
-      setInfoMessage('New MFA OTP code sent to your email!')
+      setSuccessMessage('New MFA OTP code sent to your email!')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to resend OTP')
     } finally {
@@ -88,6 +94,7 @@ export default function LoginPage() {
     setOtpCode('')
     setError('')
     setInfoMessage('')
+    setSuccessMessage('')
   }
 
   return (
@@ -116,7 +123,7 @@ export default function LoginPage() {
             <div className="flex gap-2 mb-6 p-1 bg-gray-950/60 rounded-xl border border-white/5">
               <button
                 type="button"
-                onClick={() => setIsLogin(true)}
+                onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   isLogin
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
@@ -127,7 +134,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsLogin(false)}
+                onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   !isLogin
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
@@ -152,6 +159,13 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
               <p className="text-xs text-red-400 font-medium">{error}</p>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-4 p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl flex items-center gap-2.5">
+              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+              <p className="text-xs text-emerald-400 font-semibold tracking-wide">{successMessage}</p>
             </div>
           )}
 

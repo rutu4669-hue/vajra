@@ -113,8 +113,8 @@ export default function LoginPage() {
         <div className="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/80">
           
           <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center">
+              <Shield className="w-6 h-6 text-emerald-400" />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-wider">VAJRA</h1>
           </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   isLogin
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -137,7 +137,7 @@ export default function LoginPage() {
                 onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   !isLogin
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -146,12 +146,12 @@ export default function LoginPage() {
             </div>
           ) : (
             <div className="mb-6 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 mx-auto flex items-center justify-center mb-3">
-                <KeyRound className="w-6 h-6 text-blue-400" />
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mx-auto flex items-center justify-center mb-3">
+                <KeyRound className="w-6 h-6 text-emerald-400" />
               </div>
               <h2 className="text-lg font-semibold text-white">2-Step MFA Verification</h2>
               <p className="text-xs text-gray-400 mt-1">
-                Enter the 6-digit verification code sent to <span className="text-blue-300 font-mono">{email}</span>
+                Enter the 6-digit verification code sent to <span className="text-emerald-300 font-mono">{email}</span>
               </p>
             </div>
           )}
@@ -170,8 +170,8 @@ export default function LoginPage() {
           )}
 
           {infoMessage && (
-            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-              <p className="text-xs text-blue-300 font-medium">{infoMessage}</p>
+            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+              <p className="text-xs text-emerald-300 font-medium">{infoMessage}</p>
             </div>
           )}
 
@@ -188,7 +188,7 @@ export default function LoginPage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your name"
-                        className="w-full bg-gray-950/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                        className="w-full bg-gray-950/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                         required={!isLogin}
                       />
                     </div>
@@ -204,7 +204,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
-                      className="w-full bg-gray-950/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="w-full bg-gray-950/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                       required
                     />
                   </div>
@@ -219,7 +219,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
-                      className="w-full bg-gray-950/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className="w-full bg-gray-950/60 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                       required
                     />
                   </div>
@@ -229,14 +229,14 @@ export default function LoginPage() {
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-2">6-Digit OTP Code</label>
                 <div className="relative">
-                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
+                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
                   <input
                     type="text"
                     maxLength={6}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="Enter 6-digit OTP code"
-                    className="w-full bg-gray-950/80 border border-blue-500/40 rounded-xl pl-10 pr-4 py-3 text-lg font-mono text-center tracking-widest text-white placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    className="w-full bg-gray-950/80 border border-emerald-500/40 rounded-xl pl-10 pr-4 py-3 text-lg font-mono text-center tracking-widest text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/50 transition-all"
                     required
                     autoFocus
                   />
@@ -247,7 +247,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all font-semibold text-sm shadow-lg shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all font-semibold text-sm shadow-lg shadow-emerald-600/30 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading 
                 ? 'Processing...' 
@@ -273,7 +273,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={loading}
-                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Resend Code
               </button>
@@ -287,7 +287,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
-                  className="text-blue-400 hover:text-blue-300 font-medium ml-1"
+                  className="text-emerald-400 hover:text-emerald-300 font-medium ml-1"
                 >
                   {isLogin ? 'Sign up' : 'Login'}
                 </button>

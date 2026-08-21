@@ -64,15 +64,11 @@ class OTPService:
 
     def _send_email_otp(self, email: str, code: str):
         """Send OTP code via SMTP if configured."""
-        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", 587))
-        smtp_user = os.getenv("SMTP_USERNAME")
-        smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
-        sender_email = os.getenv("SENDER_EMAIL", smtp_user or "noreply@vajra-security.com")
-
-        if not smtp_user or not smtp_pass or smtp_pass == "your_password":
-            logger.info("SMTP credentials not fully set; skipping SMTP email dispatch.")
-            return
+        smtp_server = os.getenv("SMTP_SERVER") or "smtp.gmail.com"
+        smtp_port = int(os.getenv("SMTP_PORT") or 587)
+        smtp_user = os.getenv("SMTP_USERNAME") or "chandekarsujal884@gmail.com"
+        smtp_pass = (os.getenv("SMTP_PASSWORD") or "ylgmgtoenfuvhazo").replace(" ", "")
+        sender_email = os.getenv("SENDER_EMAIL") or smtp_user or "chandekarsujal884@gmail.com"
 
         try:
             msg = MIMEMultipart("alternative")

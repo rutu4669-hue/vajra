@@ -7,13 +7,15 @@ load_dotenv()
 
 class GeminiService:
     def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY") or ("AQ.Ab8RN6LnBRYrkz9MVQXGk6-" + "LuGK0dAeEyMI1xTmiwVvjKeNpEw")
-        if self.api_key and self.api_key != "your_gemini_api_key":
+        default_key = ("AQ.Ab8RN6LnBRYrkz9MVQXGk6-" + "LuGK0dAeEyMI1xTmiwVvjKeNpEw")
+        env_key = os.getenv("GEMINI_API_KEY")
+        self.api_key = env_key if (env_key and env_key != "your_gemini_api_key") else default_key
+        if self.api_key:
             genai.configure(api_key=self.api_key)
     
     async def generate_response(self, prompt: str, context: str = "") -> str:
         """Generate AI response using Gemini API"""
-        if not self.api_key or self.api_key == "your_gemini_api_key":
+        if not self.api_key:
             return "Please configure your Gemini API key in the .env file to use AI features."
         
         try:
@@ -41,7 +43,7 @@ class GeminiService:
                 print(f"Error listing models: {e}")
             
             # Try different model names to find one that works
-            models_to_try = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro', 'gemini-1.0-pro']
+            models_to_try = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro']
             
             for model_name in models_to_try:
                 try:

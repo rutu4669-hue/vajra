@@ -89,8 +89,7 @@ async def login(user_credentials: UserLogin, request: Request, db: Session = Dep
         return LoginResponse(
             mfa_required=True,
             mfa_session=mfa_session,
-            demo_otp=otp_code,
-            message="MFA OTP code sent. Please enter the 6-digit verification code."
+            message="MFA OTP code sent. Please enter the 6-digit verification code sent to your email."
         )
 
     # Direct login if MFA is disabled
@@ -122,8 +121,7 @@ async def send_otp(otp_req: OTPSendRequest, db: Session = Depends(get_db)):
     otp_code, mfa_session = otp_service.generate_otp(user.email)
     return {
         "message": f"OTP code sent to {user.email}",
-        "mfa_session": mfa_session,
-        "demo_otp": otp_code
+        "mfa_session": mfa_session
     }
 
 @router.post("/verify-otp", response_model=Token)

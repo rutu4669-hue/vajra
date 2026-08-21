@@ -16,7 +16,6 @@ export default function LoginPage() {
   const [isMfaStep, setIsMfaStep] = useState(false)
   const [otpCode, setOtpCode] = useState('')
   const [mfaSession, setMfaSession] = useState('')
-  const [demoOtpHint, setDemoOtpHint] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -48,8 +47,7 @@ export default function LoginPage() {
         if (response.mfa_required) {
           setIsMfaStep(true)
           setMfaSession(response.mfa_session || '')
-          setDemoOtpHint(response.demo_otp || '')
-          setInfoMessage(response.message || 'MFA OTP code sent. Check your email or use 123456.')
+          setInfoMessage(response.message || 'MFA OTP verification code sent to your email.')
         } else if (response.token) {
           setAuth(response.token.user, response.token.access_token, response.token.refresh_token)
           router.push('/')
@@ -77,7 +75,6 @@ export default function LoginPage() {
     try {
       const res = await authService.sendOtp(email)
       setMfaSession(res.mfa_session || mfaSession)
-      setDemoOtpHint(res.demo_otp || demoOtpHint)
       setInfoMessage('New MFA OTP code sent to your email!')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to resend OTP')
@@ -224,17 +221,12 @@ export default function LoginPage() {
                     maxLength={6}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 6-digit OTP code (e.g. 123456)"
+                    placeholder="Enter 6-digit OTP code"
                     className="w-full bg-gray-950/80 border border-blue-500/40 rounded-xl pl-10 pr-4 py-3 text-lg font-mono text-center tracking-widest text-white placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/50 transition-all"
                     required
                     autoFocus
                   />
                 </div>
-                {demoOtpHint && (
-                  <p className="text-[11px] text-gray-400 mt-2 text-center">
-                    MFA Code: <span className="font-mono text-blue-300 font-bold">{demoOtpHint}</span> (or master <span className="font-mono text-blue-300">123456</span>)
-                  </p>
-                )}
               </div>
             )}
 

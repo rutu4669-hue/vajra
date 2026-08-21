@@ -68,7 +68,7 @@ class OTPService:
         smtp_pass = os.getenv("SMTP_PASSWORD")
         sender_email = os.getenv("SENDER_EMAIL", smtp_user or "noreply@vajra-security.com")
 
-        if not smtp_user or not smtp_pass or smtp_pass in ("your_password", "8768"):
+        if not smtp_user or not smtp_pass or smtp_pass == "your_password":
             logger.info("SMTP credentials not fully set; skipping SMTP email dispatch.")
             return
 

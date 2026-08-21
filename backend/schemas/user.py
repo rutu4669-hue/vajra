@@ -40,6 +40,5 @@ class OTPSendRequest(BaseModel):
 class LoginResponse(BaseModel):
     mfa_required: bool = True
     mfa_session: Optional[str] = None
-    demo_otp: Optional[str] = None
     message: str
     token: Optional[Token] = None

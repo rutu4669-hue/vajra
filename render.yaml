@@ -28,6 +28,16 @@ services:
         value: SN1SzVtqGmQFJksqsEMV3CtosPm8dsQk1m41AyPsubMVnJqPYbn4oQOwzHkKSgkZ
       - key: NVD_API_KEY
         value: 7bf609e4-78b9-43d4-8b81-be3399af1629
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USERNAME
+        value: shooter9579@gmail.com
+      - key: SMTP_PASSWORD
+        value: 8768
+      - key: SENDER_EMAIL
+        value: shooter9579@gmail.com
     healthCheckPath: /health
 
   # Frontend Service (Next.js Static Export)

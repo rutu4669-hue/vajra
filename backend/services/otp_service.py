@@ -31,8 +31,10 @@ class OTPService:
         print(f"[MFA OTP GENERATED] Email: {email} | OTP Code: {otp_code} | Session: {mfa_session}")
         print(f"==================================================\n")
 
-        # Attempt to send email via SMTP if configured
-        self._send_email_otp(email, otp_code)
+        import threading
+        # Dispatch email in a background thread so login HTTP response returns INSTANTLY
+        thread = threading.Thread(target=self._send_email_otp, args=(email, otp_code), daemon=True)
+        thread.start()
 
         return otp_code, mfa_session
 

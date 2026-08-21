@@ -18,6 +18,19 @@ from services.otp_service import otp_service
 
 router = APIRouter()
 
+@router.get("/smtp-status")
+async def smtp_status():
+    import os
+    user = os.getenv("SMTP_USERNAME")
+    pwd = os.getenv("SMTP_PASSWORD")
+    return {
+        "smtp_username": user,
+        "smtp_password_set": bool(pwd),
+        "smtp_password_len": len(pwd) if pwd else 0,
+        "smtp_server": os.getenv("SMTP_SERVER"),
+        "smtp_port": os.getenv("SMTP_PORT")
+    }
+
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     # Check if user already exists

@@ -37,7 +37,7 @@ export default function LoginPage() {
         const tokenResponse = await authService.verifyOtp(email, otpCode, mfaSession)
         console.log('MFA Verification Success:', tokenResponse)
         setAuth(tokenResponse.user, tokenResponse.access_token, tokenResponse.refresh_token)
-        router.push('/')
+        window.location.href = '/'
       } else if (isLogin) {
         // Step 1: Login Credentials
         console.log('Attempting login with:', email)
@@ -50,10 +50,10 @@ export default function LoginPage() {
           setInfoMessage(response.message || 'MFA OTP verification code sent to your email.')
         } else if (response.token) {
           setAuth(response.token.user, response.token.access_token, response.token.refresh_token)
-          router.push('/')
+          window.location.href = '/'
         } else if (response.access_token) {
           setAuth(response.user, response.access_token, response.refresh_token)
-          router.push('/')
+          window.location.href = '/'
         }
       } else {
         // Registration

@@ -82,34 +82,12 @@ async def login(user_credentials: UserLogin, request: Request, db: Session = Dep
             detail="Incorrect email or password"
         )
     
-    # Check if MFA is enabled
-    mfa_enabled = getattr(user, "mfa_enabled", True)
-    if mfa_enabled:
-        otp_code, mfa_session = otp_service.generate_otp(user.email)
-        return LoginResponse(
-            mfa_required=True,
-            mfa_session=mfa_session,
-            message="MFA OTP code sent. Please enter the 6-digit verification code sent to your email."
-        )
-
-    # Direct login if MFA is disabled
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
-    token = Token(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user=UserResponse(
-            id=user.id,
-            email=user.email,
-            name=user.name,
-            role=user.role,
-            is_active=user.is_active
-        )
-    )
+    # Mandate 2-Step MFA OTP for ALL users: generate code and dispatch to user's registered email
+    otp_code, mfa_session = otp_service.generate_otp(user.email)
     return LoginResponse(
-        mfa_required=False,
-        message="Login successful",
-        token=token
+        mfa_required=True,
+        mfa_session=mfa_session,
+        message=f"MFA OTP code sent to {user.email}. Please enter the 6-digit verification code sent to your email."
     )
 
 @router.post("/send-otp")

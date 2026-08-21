@@ -49,6 +49,18 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
         
+        # Run column migrations for existing PostgreSQL databases
+        try:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN DEFAULT TRUE;"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR;"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMPTZ;"))
+                conn.commit()
+                logger.info("User table columns verified/migrated successfully")
+        except Exception as mig_err:
+            logger.warning(f"Column migration check notice: {mig_err}")
+            
         # Seed default admin user
         db = SessionLocal()
         try:

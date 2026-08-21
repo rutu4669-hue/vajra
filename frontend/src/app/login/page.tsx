@@ -248,7 +248,7 @@ export default function LoginPage() {
                 : isMfaStep 
                 ? 'Verify & Complete Login' 
                 : isLogin 
-                ? 'Login (with MFA)' 
+                ? 'Login' 
                 : 'Sign Up'
               }
             </button>

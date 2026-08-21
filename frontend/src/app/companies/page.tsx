@@ -364,28 +364,16 @@ export default function CompaniesPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end ml-2 gap-1.5">
+                      <div className="flex flex-col items-end ml-2 gap-1">
                         <div className="flex items-center gap-1">
                           <span className={`w-2 h-2 rounded-full ${company.is_active ? 'bg-emerald-400' : 'bg-red-400'}`} />
                           <span className="text-[10px] text-secondary">{company.is_active ? 'Active' : 'Inactive'}</span>
                         </div>
-                        {/* Blinking Score Pill */}
-                        <div className={`px-2 py-0.5 rounded-lg border font-mono font-bold text-xs flex items-center gap-1 transition-all ${scoreStyle.badgeBg} animate-pulse shadow-sm`}>
+                        {/* ONLY Blinking Rating Score Badge (e.g., 87/100) */}
+                        <div className={`px-2.5 py-1 rounded-lg border font-mono font-bold text-xs flex items-center gap-1.5 transition-all ${scoreStyle.badgeBg} animate-pulse shadow-md mt-0.5`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${scoreStyle.dotColor}`} />
                           <span>{score}/100</span>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Security Posture Banner */}
-                    <div className="mb-3 p-2.5 bg-background/80 border border-border rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Shield className={`w-4 h-4 ${scoreStyle.textColor}`} />
-                        <span className="text-xs font-medium text-foreground">Security Posture Score</span>
-                      </div>
-                      <div className={`px-2.5 py-1 rounded-lg border font-mono font-bold text-xs flex items-center gap-1.5 ${scoreStyle.badgeBg} animate-pulse shadow-md`}>
-                        <span className={`w-2 h-2 rounded-full ${scoreStyle.dotColor}`} />
-                        <span className="text-sm font-bold tracking-wider">{score}/100</span>
                       </div>
                     </div>
 

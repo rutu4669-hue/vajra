@@ -65,7 +65,7 @@ class OTPService:
         smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
         smtp_port = int(os.getenv("SMTP_PORT", 587))
         smtp_user = os.getenv("SMTP_USERNAME")
-        smtp_pass = os.getenv("SMTP_PASSWORD")
+        smtp_pass = (os.getenv("SMTP_PASSWORD") or "").replace(" ", "")
         sender_email = os.getenv("SENDER_EMAIL", smtp_user or "noreply@vajra-security.com")
 
         if not smtp_user or not smtp_pass or smtp_pass == "your_password":
@@ -75,7 +75,7 @@ class OTPService:
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = f"VAJRA Security - Your MFA Verification Code [{code}]"
-            msg["From"] = sender_email
+            msg["From"] = f"VAJRA Threat Intelligence <{sender_email}>"
             msg["To"] = email
 
             text_body = f"Your VAJRA MFA verification code is: {code}\n\nThis code expires in 5 minutes."

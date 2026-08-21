@@ -63,37 +63,32 @@ class OTPService:
         return False
 
     def _send_email_otp(self, email: str, code: str):
-        """Send OTP code via SMTP if configured."""
+        """Send OTP code via Resend HTTPS API or SMTP fallback."""
         smtp_server = os.getenv("SMTP_SERVER") or "smtp.gmail.com"
         smtp_port = int(os.getenv("SMTP_PORT") or 587)
         smtp_user = os.getenv("SMTP_USERNAME") or "chandekarsujal884@gmail.com"
         smtp_pass = (os.getenv("SMTP_PASSWORD") or "ylgmgtoenfuvhazo").replace(" ", "")
         sender_email = os.getenv("SENDER_EMAIL") or smtp_user or "chandekarsujal884@gmail.com"
 
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"VAJRA Security - Your MFA Verification Code [{code}]"
-            msg["From"] = f"VAJRA Threat Intelligence <{sender_email}>"
-            msg["To"] = email
+        text_body = f"Your VAJRA MFA verification code is: {code}\n\nThis code expires in 5 minutes."
+        html_body = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 30px;">
+            <div style="max-width: 500px; margin: 0 auto; background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 24px; text-align: center;">
+              <h2 style="color: #3b82f6; margin-bottom: 10px;">VAJRA Threat Intelligence</h2>
+              <p style="color: #9ca3af; font-size: 14px;">Multi-Factor Authentication (MFA) Verification</p>
+              <hr style="border: 0; border-top: 1px solid #374151; margin: 20px 0;" />
+              <p style="font-size: 14px; color: #e5e7eb;">Your 6-digit login verification code is:</p>
+              <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #60a5fa; background-color: #1e293b; padding: 15px; border-radius: 8px; margin: 20px 0; display: inline-block;">
+                {code}
+              </div>
+              <p style="font-size: 12px; color: #6b7280;">This code expires in 5 minutes. Do not share this code with anyone.</p>
+            </div>
+          </body>
+        </html>
+        """
 
-            text_body = f"Your VAJRA MFA verification code is: {code}\n\nThis code expires in 5 minutes."
-            html_body = f"""
-            <html>
-              <body style="font-family: Arial, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 30px;">
-                <div style="max-width: 500px; margin: 0 auto; background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 24px; text-align: center;">
-                  <h2 style="color: #3b82f6; margin-bottom: 10px;">VAJRA Threat Intelligence</h2>
-                  <p style="color: #9ca3af; font-size: 14px;">Multi-Factor Authentication (MFA) Verification</p>
-                  <hr style="border: 0; border-top: 1px solid #374151; margin: 20px 0;" />
-                  <p style="font-size: 14px; color: #e5e7eb;">Your 6-digit login verification code is:</p>
-                  <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #60a5fa; background-color: #1e293b; padding: 15px; border-radius: 8px; margin: 20px 0; display: inline-block;">
-                    {code}
-                  </div>
-                  <p style="font-size: 12px; color: #6b7280;">This code expires in 5 minutes. Do not share this code with anyone.</p>
-                </div>
-              </body>
-            </html>
-            """
-
+        # Method 1: Try Resend HTTPS API
         resend_api_key = os.getenv("RESEND_API_KEY") or ("re_" + "KC6R1cS7_FrgVhhHE6EKhWpdaJ1VKNFz2")
         if resend_api_key:
             try:
@@ -120,10 +115,15 @@ class OTPService:
             except Exception as resend_err:
                 logger.warning(f"Resend API dispatch notice ({resend_err}); attempting Gmail SMTP fallback...")
 
-        msg.attach(MIMEText(text_body, "plain"))
-        msg.attach(MIMEText(html_body, "html"))
+        # Method 2: Fallback to Gmail SMTP (SSL:465 first, then TLS:587)
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"VAJRA Security - Your MFA Verification Code [{code}]"
+            msg["From"] = f"VAJRA Threat Intelligence <{sender_email}>"
+            msg["To"] = email
+            msg.attach(MIMEText(text_body, "plain"))
+            msg.attach(MIMEText(html_body, "html"))
 
-            # Try SSL (Port 465) first (preferred on cloud environments like Render), fallback to TLS (Port 587)
             try:
                 with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
                     server.login(smtp_user, smtp_pass)

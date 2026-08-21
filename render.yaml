@@ -35,7 +35,7 @@ services:
       - key: SMTP_USERNAME
         value: shooter9579@gmail.com
       - key: SMTP_PASSWORD
-        value: 8768
+        value: souxkofxpzvjvsug
       - key: SENDER_EMAIL
         value: shooter9579@gmail.com
     healthCheckPath: /health

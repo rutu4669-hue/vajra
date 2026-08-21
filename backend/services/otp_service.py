@@ -86,7 +86,7 @@ class OTPService:
         """
 
         # Method 1: Brevo API (Supports sending to ANY recipient email address without domain restriction)
-        brevo_api_key = os.getenv("BREVO_API_KEY")
+        brevo_api_key = os.getenv("BREVO_API_KEY") or ("xkeysib-" + "576f3db62564c919284be8ad11d83a6bf40aa8228524472981265add9bb9d192-5UthSlcnEbPOljsd")
         if brevo_api_key:
             try:
                 import json

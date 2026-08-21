@@ -187,10 +187,32 @@ export default function CompaniesPage() {
     return 'bg-slate-500/15 text-slate-400 border-slate-500/30'
   }
 
+  const getScoreColorObj = (score: number) => {
+    if (score >= 85) {
+      return {
+        textColor: 'text-emerald-400',
+        badgeBg: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-emerald-500/20',
+        dotColor: 'bg-emerald-400'
+      }
+    }
+    if (score >= 70) {
+      return {
+        textColor: 'text-amber-400',
+        badgeBg: 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-amber-500/20',
+        dotColor: 'bg-amber-400'
+      }
+    }
+    return {
+      textColor: 'text-red-400',
+      badgeBg: 'bg-red-500/15 border-red-500/40 text-red-400 shadow-red-500/20',
+      dotColor: 'bg-red-400'
+    }
+  }
+
   const getScoreColor = (score: number) => {
-    if (score >= 85) return 'text-green-600'
-    if (score >= 70) return 'text-yellow-600'
-    return 'text-red-600'
+    if (score >= 85) return 'text-emerald-400'
+    if (score >= 70) return 'text-amber-400'
+    return 'text-red-400'
   }
 
   const getScoreForCompany = (companyId: number) => {
@@ -309,14 +331,17 @@ export default function CompaniesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence>
-                {filteredCompanies.map((company, index) => (
+                {filteredCompanies.map((company, index) => {
+                  const score = getScoreForCompany(company.id)
+                  const scoreStyle = getScoreColorObj(score)
+                  return (
                   <motion.div
                     key={company.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group"
+                    className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group relative overflow-hidden"
                   >
                     {/* Company Header */}
                     <div className="flex items-start justify-between mb-3">
@@ -339,16 +364,28 @@ export default function CompaniesPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end ml-2">
+                      <div className="flex flex-col items-end ml-2 gap-1.5">
                         <div className="flex items-center gap-1">
                           <span className={`w-2 h-2 rounded-full ${company.is_active ? 'bg-emerald-400' : 'bg-red-400'}`} />
                           <span className="text-[10px] text-secondary">{company.is_active ? 'Active' : 'Inactive'}</span>
                         </div>
-                        {company.last_analyzed && (
-                          <span className={`text-sm font-bold ${getScoreColor(getScoreForCompany(company.id))} animate-pulse mt-1`}>
-                            {getScoreForCompany(company.id)}
-                          </span>
-                        )}
+                        {/* Blinking Score Pill */}
+                        <div className={`px-2 py-0.5 rounded-lg border font-mono font-bold text-xs flex items-center gap-1 transition-all ${scoreStyle.badgeBg} animate-pulse shadow-sm`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${scoreStyle.dotColor}`} />
+                          <span>{score}/100</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Posture Banner */}
+                    <div className="mb-3 p-2.5 bg-background/80 border border-border rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className={`w-4 h-4 ${scoreStyle.textColor}`} />
+                        <span className="text-xs font-medium text-foreground">Security Posture Score</span>
+                      </div>
+                      <div className={`px-2.5 py-1 rounded-lg border font-mono font-bold text-xs flex items-center gap-1.5 ${scoreStyle.badgeBg} animate-pulse shadow-md`}>
+                        <span className={`w-2 h-2 rounded-full ${scoreStyle.dotColor}`} />
+                        <span className="text-sm font-bold tracking-wider">{score}/100</span>
                       </div>
                     </div>
 
@@ -432,7 +469,7 @@ export default function CompaniesPage() {
                       </button>
                     </div>
                   </motion.div>
-                ))}
+                )})}
               </AnimatePresence>
             </div>
           )}

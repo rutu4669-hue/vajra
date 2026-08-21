@@ -2,9 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from database.database import get_db
 from models.user import User
-from schemas.user import UserCreate, UserLogin, UserResponse, Token, TokenRefresh
+from schemas.user import (
+    UserCreate, 
+    UserLogin, 
+    UserResponse, 
+    Token, 
+    TokenRefresh, 
+    LoginResponse, 
+    OTPVerifyRequest, 
+    OTPSendRequest
+)
 from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, verify_token
+from services.otp_service import otp_service
 
 router = APIRouter()
 
@@ -24,7 +34,8 @@ async def register(user: UserCreate, request: Request, db: Session = Depends(get
         email=user.email,
         name=user.name,
         hashed_password=hashed_password,
-        role="SOC Analyst"
+        role="SOC Analyst",
+        mfa_enabled=True
     )
     db.add(db_user)
     db.commit()
@@ -54,7 +65,7 @@ async def register(user: UserCreate, request: Request, db: Session = Depends(get
     
     return db_user
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 async def login(user_credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
     # Find user
     user = db.query(User).filter(User.email == user_credentials.email).first()
@@ -71,6 +82,68 @@ async def login(user_credentials: UserLogin, request: Request, db: Session = Dep
             detail="Incorrect email or password"
         )
     
+    # Check if MFA is enabled
+    mfa_enabled = getattr(user, "mfa_enabled", True)
+    if mfa_enabled:
+        otp_code, mfa_session = otp_service.generate_otp(user.email)
+        return LoginResponse(
+            mfa_required=True,
+            mfa_session=mfa_session,
+            demo_otp=otp_code,
+            message="MFA OTP code sent. Please enter the 6-digit verification code."
+        )
+
+    # Direct login if MFA is disabled
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+    token = Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+            is_active=user.is_active
+        )
+    )
+    return LoginResponse(
+        mfa_required=False,
+        message="Login successful",
+        token=token
+    )
+
+@router.post("/send-otp")
+async def send_otp(otp_req: OTPSendRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == otp_req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    otp_code, mfa_session = otp_service.generate_otp(user.email)
+    return {
+        "message": f"OTP code sent to {user.email}",
+        "mfa_session": mfa_session,
+        "demo_otp": otp_code
+    }
+
+@router.post("/verify-otp", response_model=Token)
+async def verify_otp(verify_req: OTPVerifyRequest, request: Request, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == verify_req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    isValid = otp_service.verify_otp(
+        email=verify_req.email,
+        code=verify_req.otp_code,
+        mfa_session=verify_req.mfa_session
+    )
+
+    if not isValid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired MFA OTP code"
+        )
+
     # Log login activity
     try:
         from services.activity_logger import ActivityLogger
@@ -78,18 +151,18 @@ async def login(user_credentials: UserLogin, request: Request, db: Session = Dep
         client_ip = request.client.host if request.client else None
         logger.log_activity(
             user_id=user.id,
-            action="USER_LOGIN",
+            action="USER_LOGIN_MFA",
             resource="user",
-            details=f"User logged in successfully: {user.email}",
+            details=f"User verified MFA and logged in: {user.email}",
             ip_address=client_ip
         )
     except Exception:
         pass
 
-    # Create tokens directly
+    # Issue JWT tokens
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
-    
+
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,

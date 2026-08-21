@@ -116,11 +116,9 @@ export default function LoginPage() {
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/15 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="flex items-center justify-center gap-3 mb-8 relative z-10">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/25 border border-blue-400/40 backdrop-blur-md flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Shield className="w-6 h-6 text-blue-400" />
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-wider drop-shadow-md">VAJRA</h1>
+          <div className="flex flex-col items-center justify-center gap-2 mb-6 relative z-10">
+            <img src="/vajra_logo.jpg" alt="VAJRA Logo" className="h-16 w-auto object-contain rounded-2xl shadow-lg shadow-blue-500/20 border border-white/20" />
+            <h1 className="text-xl font-bold text-white tracking-wider drop-shadow-md">VAJRA</h1>
           </div>
 
           {!isMfaStep ? (

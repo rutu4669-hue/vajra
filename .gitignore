@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Databases & Storage
+*.db
+*.sqlite3
+uploads/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# System Files
+.DS_Store
+Thumbs.db

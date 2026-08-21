@@ -94,8 +94,33 @@ class OTPService:
             </html>
             """
 
-            msg.attach(MIMEText(text_body, "plain"))
-            msg.attach(MIMEText(html_body, "html"))
+        resend_api_key = os.getenv("RESEND_API_KEY")
+        if resend_api_key:
+            try:
+                import json
+                import urllib.request
+                req = urllib.request.Request(
+                    "https://api.resend.com/emails",
+                    data=json.dumps({
+                        "from": os.getenv("SENDER_EMAIL") or "VAJRA Security <onboarding@resend.dev>",
+                        "to": [email],
+                        "subject": f"VAJRA Security - Your MFA Verification Code [{code}]",
+                        "html": html_body
+                    }).encode(),
+                    headers={
+                        "Authorization": f"Bearer {resend_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req) as resp:
+                    logger.info(f"MFA OTP email sent successfully via Resend API to {email}: {resp.getcode()}")
+                    return
+            except Exception as resend_err:
+                logger.error(f"Resend API email dispatch error ({resend_err}); falling back to SMTP...")
+
+        msg.attach(MIMEText(text_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
 
             # Try SSL (Port 465) first (preferred on cloud environments like Render), fallback to TLS (Port 587)
             try:

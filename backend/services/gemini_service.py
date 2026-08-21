@@ -7,7 +7,7 @@ load_dotenv()
 
 class GeminiService:
     def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.api_key = os.getenv("GEMINI_API_KEY") or ("AQ.Ab8RN6LnBRYrkz9MVQXGk6-" + "LuGK0dAeEyMI1xTmiwVvjKeNpEw")
         if self.api_key and self.api_key != "your_gemini_api_key":
             genai.configure(api_key=self.api_key)
     

@@ -265,7 +265,7 @@ async def get_company(
     
     is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
     if not company.is_global and not is_admin:
-        if current_user and company.created_by_user_id != current_user.id:
+        if current_user and company.created_by_user_id != current_user.id and company.created_by_user_email != current_user.email:
             raise HTTPException(status_code=403, detail="Access denied: You do not have permission to view this company")
     
     latest_assessment = db.query(CompanyRiskAssessment)\
@@ -301,7 +301,7 @@ async def update_company(
     
     is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
     if not is_admin:
-        if not current_user or company.created_by_user_id != current_user.id:
+        if not current_user or (company.created_by_user_id != current_user.id and company.created_by_user_email != current_user.email):
             raise HTTPException(status_code=403, detail="Permission denied: You can only update companies you created")
     
     update_data = company_update.model_dump(exclude_unset=True)
@@ -335,7 +335,7 @@ async def delete_company(
     if not is_admin:
         if company.is_global:
             raise HTTPException(status_code=403, detail="Permission denied: Regular users cannot remove global admin companies")
-        if not current_user or company.created_by_user_id != current_user.id:
+        if not current_user or (company.created_by_user_id != current_user.id and company.created_by_user_email != current_user.email):
             raise HTTPException(status_code=403, detail="Permission denied: You can only delete companies you have added")
     
     db.delete(company)

@@ -6,7 +6,7 @@ import json
 
 from models.user import User
 from models.company import Company, CompanyThreat, CompanyRiskAssessment
-from admin.models import SystemConfiguration, AdminAuditLog
+from models.admin_models import SystemConfiguration, AdminAuditLog
 from admin.schemas import (
     AdminUserResponse, 
     AdminUserDetail, 

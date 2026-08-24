@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by_user_name VARCHAR;"))
                 conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by_user_email VARCHAR;"))
                 conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_global BOOLEAN DEFAULT TRUE;"))
-                conn.execute(text("UPDATE companies SET is_global = TRUE WHERE is_global IS NULL;"))
+                conn.execute(text("UPDATE companies SET is_global = TRUE WHERE is_global IS NULL OR created_by_user_email = 'admin@indigo.com' OR created_by_user_name = 'Admin' OR created_by_user_name = 'Admin User' OR created_by_user_name = 'System' OR created_by_user_id IS NULL;"))
                 conn.execute(text("UPDATE companies SET is_active = TRUE WHERE is_active IS NULL;"))
                 
                 conn.commit()

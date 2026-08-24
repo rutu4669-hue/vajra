@@ -90,13 +90,16 @@ async def create_company(
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """Create or reactivate a company for monitoring, save to DB, and trigger background vulnerability & threat analysis"""
-    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
+    is_admin = bool(
+        (current_user and current_user.role and current_user.role.lower() == "admin") or
+        (current_user and current_user.email and "admin" in current_user.email.lower())
+    )
     
     # Determine visibility and creator info
-    if is_admin:
-        is_global = company.is_global if company.is_global is not None else True
+    if is_admin or company.is_global is True:
+        is_global = True
         created_by_id = current_user.id if current_user else None
-        created_by_name = current_user.name if current_user else "Admin"
+        created_by_name = current_user.name if current_user else "System Admin"
         created_by_email = current_user.email if current_user else "admin@indigo.com"
     elif current_user:
         is_global = False
@@ -106,8 +109,8 @@ async def create_company(
     else:
         is_global = True
         created_by_id = None
-        created_by_name = "System"
-        created_by_email = "system@indigo.com"
+        created_by_name = "System Admin"
+        created_by_email = "admin@indigo.com"
 
     clean_domain = company.domain.strip().lower().replace("https://", "").replace("http://", "").split("/")[0]
 
@@ -121,7 +124,7 @@ async def create_company(
             existing.industry = company.industry
         if company.description:
             existing.description = company.description
-        if is_admin:
+        if is_admin or company.is_global is True:
             existing.is_global = True
         existing.updated_at = datetime.utcnow()
         db.commit()
@@ -188,19 +191,14 @@ async def get_companies(
     if active_only:
         query = query.filter(or_(Company.is_active == True, Company.is_active.is_(None)))
         
-    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
+    is_admin = bool(
+        (current_user and current_user.role and current_user.role.lower() == "admin") or
+        (current_user and current_user.email and "admin" in current_user.email.lower())
+    )
     
     if is_admin:
         if filter_by == "global":
-            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
-        elif filter_by == "my":
-            query = query.filter(Company.created_by_user_id == current_user.id)
-        elif filter_by == "users":
-            query = query.filter(Company.is_global == False)
-        # default: Admin sees ALL companies!
-    elif current_user:
-        if filter_by == "global":
-            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None), Company.created_by_user_email == "admin@indigo.com"))
         elif filter_by == "my":
             query = query.filter(
                 or_(
@@ -209,28 +207,41 @@ async def get_companies(
                 )
             )
         elif filter_by == "users":
+            query = query.filter(and_(Company.is_global == False, Company.created_by_user_email != "admin@indigo.com"))
+        # default (None or "all"): Admin sees ALL companies from all users!
+    elif current_user:
+        if filter_by == "global":
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None), Company.created_by_user_email == "admin@indigo.com"))
+        elif filter_by == "my" or filter_by == "users":
             query = query.filter(
-                or_(
-                    Company.created_by_user_id == current_user.id,
-                    Company.created_by_user_email == current_user.email
+                and_(
+                    Company.is_global == False,
+                    or_(
+                        Company.created_by_user_id == current_user.id,
+                        Company.created_by_user_email == current_user.email
+                    )
                 )
             )
         else:
-            # Default for regular user: see all Global admin domains + their own private domains
+            # Default for regular user: see ALL Global admin domains + their own private domains
             query = query.filter(
                 or_(
                     Company.is_global == True,
                     Company.is_global.is_(None),
+                    Company.created_by_user_email == "admin@indigo.com",
                     Company.created_by_user_id == current_user.id,
                     Company.created_by_user_email == current_user.email
                 )
             )
     else:
         # Default for unauthenticated or public: see all global/system domains
-        if filter_by == "users":
-            query = query.filter(Company.is_global == False)
-        else:
-            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
+        query = query.filter(
+            or_(
+                Company.is_global == True,
+                Company.is_global.is_(None),
+                Company.created_by_user_email == "admin@indigo.com"
+            )
+        )
         
     companies_list = query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
     results = []

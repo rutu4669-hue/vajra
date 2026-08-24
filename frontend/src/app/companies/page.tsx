@@ -280,10 +280,24 @@ export default function CompaniesPage() {
     setTimeout(() => setCopiedIp(null), 2000)
   }
 
+  const isCompanyGlobal = (c: Company) => {
+    return c.is_global === true || c.is_global === null || c.is_global === undefined || 
+      c.created_by_user_email === 'admin@indigo.com' || 
+      c.created_by_user_name === 'Admin User' || 
+      c.created_by_user_name === 'Admin' || 
+      c.created_by_user_name === 'System' || 
+      c.created_by_user_name === 'System Admin'
+  }
+
+  const isCompanyMine = (c: Company) => {
+    if (!user) return false
+    return String(c.created_by_user_id) === String(user.id) || (Boolean(c.created_by_user_email) && c.created_by_user_email?.toLowerCase() === user.email?.toLowerCase())
+  }
+
   // Count metrics for tabs
-  const globalCount = companies.filter(c => c.is_global !== false).length
-  const myCount = companies.filter(c => user && (String(c.created_by_user_id) === String(user.id) || (!c.is_global && c.created_by_user_email === user.email))).length
-  const userAddedCount = companies.filter(c => c.is_global === false).length
+  const globalCount = companies.filter(c => isCompanyGlobal(c)).length
+  const myCount = companies.filter(c => isCompanyMine(c)).length
+  const userAddedCount = companies.filter(c => !isCompanyGlobal(c)).length
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -295,11 +309,11 @@ export default function CompaniesPage() {
     if (!matchesSearch) return false
 
     if (activeTab === 'global') {
-      return c.is_global !== false
+      return isCompanyGlobal(c)
     } else if (activeTab === 'my') {
-      return user && (String(c.created_by_user_id) === String(user.id) || (!c.is_global && c.created_by_user_email === user.email))
+      return isCompanyMine(c)
     } else if (activeTab === 'users') {
-      return c.is_global === false
+      return !isCompanyGlobal(c)
     }
     return true
   })
@@ -349,11 +363,14 @@ export default function CompaniesPage() {
   if (!mounted) {
     return (
       <div className="flex min-h-screen bg-background">
-        <div className="w-64 bg-card border-r border-border h-screen animate-pulse" />
-        <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-card border-b border-border animate-pulse" />
-          <main className="flex-1 p-6">
-            <div className="h-96 bg-card rounded-lg animate-pulse" />
+        <Sidebar collapsed={false} setCollapsed={() => {}} sidebarWidth={200} setSidebarWidth={() => {}} />
+        <div className="flex-1 flex flex-col ml-64">
+          <Navbar />
+          <main className="flex-1 p-6 flex items-center justify-center">
+            <div className="text-secondary text-sm flex items-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              Initializing Security Portal...
+            </div>
           </main>
         </div>
       </div>
@@ -373,9 +390,9 @@ export default function CompaniesPage() {
         style={{ marginLeft: sidebarCollapsed ? '64px' : `${sidebarWidth}px` }}
       >
         <Navbar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-auto p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                 <Building2 className="w-7 h-7 text-primary" />
@@ -456,7 +473,7 @@ export default function CompaniesPage() {
                         : 'text-secondary hover:text-foreground'
                     }`}
                   >
-                    <Filter className="w-3.5 h-3.5 text-amber-400" />
+                    <UserIcon className="w-3.5 h-3.5 text-amber-400" />
                     User Monitored
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'users' ? 'bg-white/20' : 'bg-background'}`}>
                       {userAddedCount}

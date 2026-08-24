@@ -170,6 +170,8 @@ export default function CompaniesPage() {
       })
       setCompanies(prev => [newCompany, ...prev.filter(c => c.id !== newCompany.id)])
       fetchCompanies()
+      setTimeout(() => fetchCompanies(), 2500)
+      setTimeout(() => fetchCompanies(), 6000)
     } catch (err: any) {
       setFormError(err.message || 'Failed to add company')
     } finally {
@@ -482,10 +484,13 @@ export default function CompaniesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence>
                 {filteredCompanies.map((company) => {
-                  const score = getScoreForCompany(company.id)
+                  const assessment = (company as any).latest_risk_assessment
+                  const score = assessment?.security_score ?? (company.last_analyzed ? 80 : 85)
                   const scoreStyle = getScoreColorObj(score)
                   const isCreatedByCurrentUser = user && company.created_by_user_id === Number(user.id)
                   const canDelete = isAdmin || isCreatedByCurrentUser
+                  const vulnCount = assessment?.vulnerabilities_count ?? 0
+                  const riskLevel = assessment?.risk_level ?? 'MONITORED'
 
                   return (
                     <motion.div
@@ -533,20 +538,20 @@ export default function CompaniesPage() {
                         <div className="flex flex-wrap items-center gap-1.5 mb-3">
                           {company.is_global ? (
                             <span className="text-[10px] px-2 py-0.5 bg-blue-500/15 text-blue-400 border border-blue-500/30 rounded-full font-semibold flex items-center gap-1">
-                              <Globe className="w-3 h-3" /> Global (Admin)
+                              <Globe className="w-3 h-3" /> Global
                             </span>
                           ) : isCreatedByCurrentUser ? (
                             <span className="text-[10px] px-2 py-0.5 bg-purple-500/15 text-purple-400 border border-purple-500/30 rounded-full font-semibold flex items-center gap-1">
-                              <UserIcon className="w-3 h-3" /> Added by You
+                              <UserIcon className="w-3 h-3" /> Monitored
                             </span>
                           ) : (
                             <span className="text-[10px] px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full font-semibold flex items-center gap-1" title={company.created_by_user_email || ''}>
-                              <UserIcon className="w-3 h-3" /> Added by: {company.created_by_user_name || company.created_by_user_email || 'User'}
+                              <UserIcon className="w-3 h-3" /> {company.created_by_user_name || 'User'}
                             </span>
                           )}
 
-                          <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-medium flex items-center gap-1">
-                            <Radio className="w-2.5 h-2.5" /> VirusTotal VT
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${getRiskBadge(riskLevel)}`}>
+                            {riskLevel}
                           </span>
 
                           {company.industry && (
@@ -560,23 +565,23 @@ export default function CompaniesPage() {
                         <div className="grid grid-cols-3 gap-2 mb-4">
                           <div className="bg-background/50 rounded-lg p-2 text-center border border-border/50">
                             <Shield className="w-3.5 h-3.5 text-primary mx-auto mb-1" />
-                            <div className="text-[10px] text-secondary">Status</div>
-                            <div className="text-xs font-semibold text-foreground">
-                              {company.last_analyzed ? 'Analyzed' : 'Pending'}
+                            <div className="text-[10px] text-secondary">Vulnerabilities</div>
+                            <div className="text-xs font-bold text-foreground">
+                              {vulnCount} CVEs
                             </div>
                           </div>
                           <div className="bg-background/50 rounded-lg p-2 text-center border border-border/50">
-                            <Activity className="w-3.5 h-3.5 text-amber-400 mx-auto mb-1" />
-                            <div className="text-[10px] text-secondary">Monitor</div>
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mx-auto mb-1" />
+                            <div className="text-[10px] text-secondary">Threats</div>
                             <div className="text-xs font-semibold text-foreground">
-                              {company.monitoring_enabled ? 'On' : 'Off'}
+                              {(company as any).active_threats_count || 0} Active
                             </div>
                           </div>
                           <div className="bg-background/50 rounded-lg p-2 text-center border border-border/50">
-                            <Clock className="w-3.5 h-3.5 text-cyan-400 mx-auto mb-1" />
-                            <div className="text-[10px] text-secondary">Added</div>
+                            <Activity className="w-3.5 h-3.5 text-cyan-400 mx-auto mb-1" />
+                            <div className="text-[10px] text-secondary">Abuse Score</div>
                             <div className="text-xs font-semibold text-foreground">
-                              {new Date(company.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {assessment?.abuse_confidence_score ?? 0}%
                             </div>
                           </div>
                         </div>

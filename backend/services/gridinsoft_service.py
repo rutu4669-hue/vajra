@@ -111,57 +111,68 @@ class DomainInfoService:
             return {}
     
     async def _fetch_virustotal_data(self, domain: str) -> Dict[str, Any]:
-        """Fetch domain information from VirusTotal API"""
-        if not self.virustotal_api_key or self.virustotal_api_key == "your_virustotal_api_key":
-            return {}
+        """Fetch domain information from VirusTotal API with key rotation"""
+        keys_str = os.getenv("VIRUSTOTAL_API_KEYS", "") or os.getenv("VIRUSTOTAL_API_KEY", "")
+        default_key = "cb8128bd4aee51f23697aa6535be0242e24723847323a0d91a835cada2d697f7"
+        keys = [k.strip() for k in keys_str.split(",") if k.strip() and k.strip() != "your_virustotal_api_key"]
+        if not keys:
+            keys = [default_key]
+        elif default_key not in keys:
+            keys.append(default_key)
         
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                headers = {"x-apikey": self.virustotal_api_key}
-                
-                # Get domain report
-                response = await client.get(
-                    f"https://www.virustotal.com/api/v3/domains/{domain}",
-                    headers=headers
-                )
-                response.raise_for_status()
-                data = response.json()
-                
-                attributes = data.get("data", {}).get("attributes", {})
-                
-                # Calculate detection ratio
-                last_analysis_stats = attributes.get("last_analysis_stats", {})
-                malicious = last_analysis_stats.get("malicious", 0)
-                suspicious = last_analysis_stats.get("suspicious", 0)
-                harmless = last_analysis_stats.get("harmless", 0)
-                total = malicious + suspicious + harmless
-                detection_ratio = f"{malicious + suspicious}/{total}" if total > 0 else "0/0"
-                
-                # Calculate trust score based on reputation
-                reputation = attributes.get("reputation", 0)
-                trust_score = max(0, min(100, 50 + reputation))
-                
-                return {
-                    "trust_score": trust_score,
-                    "global_rank": str(attributes.get("popularity_ranks", {}).get("Alexa", {}).get("rank", "Unknown")),
-                    "analysis": {
-                        "malware_detected": malicious > 0,
-                        "phishing_detected": suspicious > 0,
-                        "suspicious_content": suspicious > 0,
-                        "last_analysis": datetime.now().isoformat(),
-                        "detection_ratio": detection_ratio
-                    },
-                    "security": {
-                        "ssl_certificate": attributes.get("last_https_certificate", {}),
-                        "dnssec": attributes.get("dnssec", False)
-                    },
-                    "connections": {
-                        "ip_addresses": attributes.get("last_dns_records", [])
-                    }
-                }
-        except Exception as e:
-            print(f"Error fetching VirusTotal data: {str(e)}")
-            return {}
+        for key in keys:
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    headers = {"x-apikey": key}
+                    
+                    response = await client.get(
+                        f"https://www.virustotal.com/api/v3/domains/{domain}",
+                        headers=headers
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        attributes = data.get("data", {}).get("attributes", {})
+                        
+                        last_analysis_stats = attributes.get("last_analysis_stats", {})
+                        malicious = last_analysis_stats.get("malicious", 0)
+                        suspicious = last_analysis_stats.get("suspicious", 0)
+                        harmless = last_analysis_stats.get("harmless", 0)
+                        total = malicious + suspicious + harmless
+                        detection_ratio = f"{malicious + suspicious}/{total}" if total > 0 else "0/0"
+                        
+                        reputation = attributes.get("reputation", 0)
+                        trust_score = max(0, min(100, 50 + reputation))
+                        
+                        # Extract resolved IPs
+                        resolved_ips = []
+                        for rec in attributes.get("last_dns_records", []):
+                            if rec.get("type") == "A" and rec.get("value"):
+                                resolved_ips.append(rec.get("value"))
+                        
+                        return {
+                            "trust_score": trust_score,
+                            "global_rank": str(attributes.get("popularity_ranks", {}).get("Alexa", {}).get("rank", "Unknown")),
+                            "analysis": {
+                                "malware_detected": malicious > 0,
+                                "phishing_detected": suspicious > 0,
+                                "suspicious_content": suspicious > 0,
+                                "last_analysis": datetime.now().isoformat(),
+                                "detection_ratio": detection_ratio
+                            },
+                            "security": {
+                                "ssl_certificate": attributes.get("last_https_certificate", {}),
+                                "dnssec": attributes.get("dnssec", False)
+                            },
+                            "connections": {
+                                "ip_addresses": resolved_ips
+                            }
+                        }
+                    elif response.status_code in (429, 401, 403):
+                        continue
+            except Exception as e:
+                print(f"Error fetching VirusTotal data: {str(e)}")
+                continue
+        return {}
     
     async def _fetch_urlscan_data(self, domain: str) -> Dict[str, Any]:
         """Fetch domain information from URLScan API"""

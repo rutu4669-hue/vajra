@@ -11,7 +11,7 @@ class CompanyBase(BaseModel):
     monitoring_enabled: bool = Field(True, description="Whether monitoring is enabled")
 
 class CompanyCreate(CompanyBase):
-    pass
+    is_global: Optional[bool] = None
 
 class CompanyUpdate(BaseModel):
     name: Optional[str] = None
@@ -20,10 +20,15 @@ class CompanyUpdate(BaseModel):
     logo_url: Optional[str] = None
     monitoring_enabled: Optional[bool] = None
     is_active: Optional[bool] = None
+    is_global: Optional[bool] = None
 
 class CompanyResponse(CompanyBase):
     id: int
     is_active: bool
+    is_global: bool = True
+    created_by_user_id: Optional[int] = None
+    created_by_user_name: Optional[str] = None
+    created_by_user_email: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     last_analyzed: Optional[datetime] = None

@@ -8,7 +8,7 @@ class Company(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)
-    domain = Column(String, unique=True, index=True, nullable=False)
+    domain = Column(String, index=True, nullable=False)
     industry = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     logo_url = Column(String, nullable=True)
@@ -18,7 +18,14 @@ class Company(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_analyzed = Column(DateTime(timezone=True), nullable=True)
 
+    # Ownership & Visibility
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by_user_name = Column(String, nullable=True)
+    created_by_user_email = Column(String, nullable=True)
+    is_global = Column(Boolean, default=True)
+
     # Relationships
+    creator = relationship("User", foreign_keys=[created_by_user_id])
     threats = relationship("CompanyThreat", back_populates="company", cascade="all, delete-orphan")
     risk_assessments = relationship("CompanyRiskAssessment", back_populates="company", cascade="all, delete-orphan")
 

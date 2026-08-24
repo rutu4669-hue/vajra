@@ -56,8 +56,16 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN DEFAULT TRUE;"))
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR;"))
                 conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMPTZ;"))
+                
+                # Company ownership & visibility columns
+                conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id);"))
+                conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by_user_name VARCHAR;"))
+                conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by_user_email VARCHAR;"))
+                conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_global BOOLEAN DEFAULT TRUE;"))
+                conn.execute(text("UPDATE companies SET is_global = TRUE WHERE is_global IS NULL;"))
+                
                 conn.commit()
-                logger.info("User table columns verified/migrated successfully")
+                logger.info("Database table columns verified/migrated successfully")
         except Exception as mig_err:
             logger.warning(f"Column migration check notice: {mig_err}")
             
@@ -129,7 +137,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.netlify\.app|https://.*\.onrender\.com",
+    allow_origin_regex=r"https://.*\.netlify\.app|https://.*\.onrender\.com|https://.*\.vercel\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

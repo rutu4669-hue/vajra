@@ -15,12 +15,14 @@ export default function ThreatIntelligenceSummary() {
   const [hasNoData, setHasNoData] = useState(false)
   const { selectedCompany } = useCompanyStore()
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
+
   const handleDownloadReport = async () => {
     setDownloading(true)
     try {
       const url = selectedCompany 
-        ? `http://localhost:8000/api/reports/company/${selectedCompany.id}`
-        : 'http://localhost:8000/api/reports/threat-intelligence'
+        ? `${API_URL}/api/reports/company/${selectedCompany.id}`
+        : `${API_URL}/api/reports/threat-intelligence`
       
       const response = await fetch(url)
       const blob = await response.blob()
@@ -46,10 +48,10 @@ export default function ThreatIntelligenceSummary() {
       try {
         if (selectedCompany) {
           // Fetch company-specific threat data
-          const threatsResponse = await fetch(`http://localhost:8000/api/companies/${selectedCompany.id}/threats`)
+          const threatsResponse = await fetch(`${API_URL}/api/companies/${selectedCompany.id}/threats`)
           const threatsData = await threatsResponse.json()
           
-          const assessmentsResponse = await fetch(`http://localhost:8000/api/companies/${selectedCompany.id}/assessments?limit=7`)
+          const assessmentsResponse = await fetch(`${API_URL}/api/companies/${selectedCompany.id}/assessments?limit=7`)
           const assessmentsData = await assessmentsResponse.json()
           
           // Calculate company-specific stats

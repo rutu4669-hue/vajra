@@ -47,7 +47,7 @@ export default function WebAlerts({ companyId, companyName, domain, days = 30 }:
     const fetchWebAlerts = async () => {
       try {
         setLoading(true)
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
         const response = await fetch(`${API_URL}/api/companies/${companyId}/web-alerts?days=${days}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
@@ -73,7 +73,7 @@ export default function WebAlerts({ companyId, companyName, domain, days = 30 }:
   const handleSearch = async () => {
     try {
       setSearching(true)
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
       const response = await fetch(`${API_URL}/api/companies/${companyId}/web-alerts?days=${days}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }

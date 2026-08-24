@@ -47,3 +47,27 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+optional_security = HTTPBearer(auto_error=False)
+
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(optional_security),
+    db: Session = Depends(get_db)
+) -> User | None:
+    if credentials is None:
+        return None
+    try:
+        token = credentials.credentials
+        payload = verify_token(token, "access")
+        if payload is None:
+            return None
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+        user = db.query(User).filter(User.email == email).first()
+        if user is None or not user.is_active:
+            return None
+        return user
+    except Exception:
+        return None
+

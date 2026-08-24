@@ -321,7 +321,8 @@ export default function PhoenixButton() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/ai/cloudsec-chat', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
+      const response = await fetch(`${API_URL}/api/ai/cloudsec-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: text }),
@@ -476,7 +477,8 @@ export default function PhoenixButton() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/ai/cloudsec-chat', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
+      const response = await fetch(`${API_URL}/api/ai/cloudsec-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: text }),

@@ -1,7 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Shield, AlertTriangle, Globe, Server, Clock, FileText, TrendingUp, Activity, CheckCircle, XCircle, Lock, ExternalLink } from 'lucide-react'
+import { 
+  Shield, AlertTriangle, Globe, Server, Clock, FileText, 
+  TrendingUp, Activity, CheckCircle, XCircle, Lock, ExternalLink,
+  Copy, Check, Radio, Cpu, Network, Database, Layers
+} from 'lucide-react'
 import CertificateDetails from './CertificateDetails'
 
 interface DomainData {
@@ -104,8 +108,27 @@ interface DomainData {
       suspicious: number
       harmless: number
       undetected: number
+      timeout?: number
     }
-    country: string
+    detection_ratio?: string
+    total_engines?: number
+    flagged_engines?: Array<{
+      engine_name: string
+      category: string
+      result: string
+      method?: string
+    }>
+    categories?: string[]
+    tags?: string[]
+    resolved_ips?: string[]
+    country?: string
+    as_owner?: string
+    network?: string
+    popularity_ranks?: Record<string, any>
+    total_votes?: {
+      harmless: number
+      malicious: number
+    }
   }
   alienvault_data?: {
     pulse_count: number
@@ -119,7 +142,7 @@ interface DomainDetailsProps {
   companyId?: number
 }
 
-type TabType = 'overview' | 'threats' | 'vulnerabilities' | 'ssl' | 'dns'
+type TabType = 'overview' | 'virustotal' | 'vulnerabilities' | 'threats' | 'ssl' | 'dns'
 
 export default function DomainDetails({ domain, companyId }: DomainDetailsProps) {
   const [domainData, setDomainData] = useState<DomainData | null>(null)
@@ -128,12 +151,13 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [vulnFilter, setVulnFilter] = useState<string>('ALL')
   const [visibleVulnCount, setVisibleVulnCount] = useState<number>(10)
+  const [copiedIp, setCopiedIp] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchDomainData = async () => {
       try {
         setLoading(true)
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
         const response = await fetch(`${API_URL}/api/domain-analysis/analyze?domain=${encodeURIComponent(domain)}`)
         
         if (!response.ok) throw new Error('Failed to fetch domain data')
@@ -152,6 +176,12 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
       fetchDomainData()
     }
   }, [domain])
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedIp(text)
+    setTimeout(() => setCopiedIp(null), 2000)
+  }
 
   if (loading) {
     return (
@@ -188,20 +218,33 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
     }
   }
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return 'text-danger bg-danger/10'
-      case 'high': return 'text-danger'
-      case 'medium': return 'text-warning'
-      case 'low': return 'text-success'
-      default: return 'text-secondary'
+  const getSourceBadge = (source?: string) => {
+    const s = (source || '').toLowerCase()
+    if (s.includes('virustotal')) {
+      return 'bg-blue-500/15 text-blue-400 border-blue-500/30'
     }
+    if (s.includes('abuseipdb')) {
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+    }
+    if (s.includes('urlscan')) {
+      return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+    }
+    if (s.includes('alienvault') || s.includes('otx')) {
+      return 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+    }
+    return 'bg-primary/15 text-primary border-primary/30'
   }
 
   const filteredVulnerabilities = (domainData.vulnerabilities || []).filter(v => {
     if (vulnFilter === 'ALL') return true
     return v.severity?.toUpperCase() === vulnFilter
   })
+
+  const resolvedIps = domainData.connections?.ip_addresses || []
+  const vtData = domainData.virustotal_data
+  const vtStats = vtData?.last_analysis_stats || { malicious: 0, suspicious: 0, harmless: 0, undetected: 0 }
+  const totalEngines = vtData?.total_engines || (vtStats.malicious + vtStats.suspicious + vtStats.harmless + vtStats.undetected)
+  const isVtMalicious = vtStats.malicious > 0
 
   return (
     <div className="space-y-6">
@@ -223,6 +266,16 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
                 <span className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${getRiskColor(domainData.risk_level)}`}>
                   {domainData.risk_level} RISK
                 </span>
+                {vtData && (
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1.5 ${
+                    isVtMalicious 
+                      ? 'bg-red-500/15 text-red-400 border-red-500/30' 
+                      : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                  }`}>
+                    <Shield className="w-3 h-3" />
+                    VT: {vtData.detection_ratio || `${vtStats.malicious}/${totalEngines}`}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-secondary mt-1">
                 Last scanned: {domainData.last_scanned}
@@ -235,8 +288,12 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
               <div className="text-[10px] text-secondary">Security Score</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">{domainData.domain_age_days}</div>
-              <div className="text-[10px] text-secondary">Domain Age (Days)</div>
+              <div className="text-2xl font-bold text-foreground">{resolvedIps.length}</div>
+              <div className="text-[10px] text-secondary">Resolved IPs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-foreground">{domainData.total_vulnerabilities || domainData.vulnerabilities?.length || 0}</div>
+              <div className="text-[10px] text-secondary">Vulnerabilities</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-foreground">{domainData.country || 'Global'}</div>
@@ -257,19 +314,26 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
           }`}
         >
           <Globe className="w-4 h-4" />
-          Overview & IPs
+          Overview & IPs ({resolvedIps.length})
         </button>
 
         <button
-          onClick={() => setActiveTab('threats')}
+          onClick={() => setActiveTab('virustotal')}
           className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-            activeTab === 'threats'
+            activeTab === 'virustotal'
               ? 'border-primary text-primary bg-primary/5 rounded-t-lg'
               : 'border-transparent text-secondary hover:text-foreground'
           }`}
         >
-          <AlertTriangle className="w-4 h-4" />
-          Domain Threats ({domainData.threats.length})
+          <Radio className="w-4 h-4 text-blue-400" />
+          VirusTotal Telemetry
+          {vtData && (
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              isVtMalicious ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+            }`}>
+              {vtData.detection_ratio || '0/0'}
+            </span>
+          )}
         </button>
 
         <button
@@ -282,6 +346,18 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
         >
           <Shield className="w-4 h-4" />
           Vulnerabilities ({domainData.total_vulnerabilities || domainData.vulnerabilities?.length || 0})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('threats')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
+            activeTab === 'threats'
+              ? 'border-primary text-primary bg-primary/5 rounded-t-lg'
+              : 'border-transparent text-secondary hover:text-foreground'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Threat Matrix ({domainData.threats.length})
         </button>
 
         <button
@@ -309,7 +385,7 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
         </button>
       </div>
 
-      {/* ──── TAB 1: OVERVIEW & IPs ──── */}
+      {/* ──── TAB 1: OVERVIEW & RESOLVED IPs ──── */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Key Metrics Grid */}
@@ -333,7 +409,7 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-xs text-secondary">Reputation</span>
+                <span className="text-xs text-secondary">Reputation Score</span>
               </div>
               <div className="text-2xl font-bold text-foreground">{domainData.reputation_score}</div>
             </div>
@@ -347,53 +423,107 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
             </div>
           </div>
 
-          {/* Infrastructure & Location */}
+          {/* Resolved IP Addresses Section */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Network className="w-5 h-5 text-primary" />
+                Resolved IP Addresses ({resolvedIps.length})
+              </h3>
+              <span className="text-xs text-secondary">
+                Discovered via Google DNS & VirusTotal
+              </span>
+            </div>
+
+            {resolvedIps.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {resolvedIps.map((ip, idx) => (
+                  <div key={idx} className="bg-background border border-border rounded-xl p-4 flex items-center justify-between hover:border-primary/40 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center font-mono text-primary font-bold text-xs">
+                        #{idx + 1}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-foreground text-sm">{ip}</span>
+                          <button
+                            onClick={() => copyToClipboard(ip)}
+                            className="text-secondary hover:text-foreground transition-colors p-1"
+                            title="Copy IP"
+                          >
+                            {copiedIp === ip ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        <div className="text-xs text-secondary mt-0.5 flex items-center gap-2">
+                          <span>{domainData.isp || 'Telecom Host'}</span>
+                          <span>•</span>
+                          <span>{domainData.country || 'Global'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+                        A Record
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 bg-background rounded-xl text-center text-secondary text-sm">
+                No external IP addresses resolved for this domain yet.
+              </div>
+            )}
+          </div>
+
+          {/* Infrastructure & Location Details */}
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5 text-primary" />
-              IP & Location Details
+              Network & Organization Infrastructure
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-2.5 bg-background rounded-lg border border-border">
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
                   <span className="text-secondary text-sm">Country Location</span>
-                  <span className="text-foreground font-semibold">{domainData.country}</span>
+                  <span className="text-foreground font-semibold">{domainData.country || 'Unknown'}</span>
                 </div>
 
-                <div className="flex justify-between items-center p-2.5 bg-background rounded-lg border border-border">
-                  <span className="text-secondary text-sm">ISP / Host</span>
-                  <span className="text-foreground font-semibold truncate max-w-[200px]">{domainData.isp}</span>
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
+                  <span className="text-secondary text-sm">ISP / Organization</span>
+                  <span className="text-foreground font-semibold truncate max-w-[220px]">{domainData.isp}</span>
                 </div>
 
-                <div className="flex justify-between items-center p-2.5 bg-background rounded-lg border border-border">
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
                   <span className="text-secondary text-sm">Domain Age</span>
                   <span className="text-foreground font-semibold">{domainData.domain_age_days} days</span>
                 </div>
               </div>
 
               <div className="space-y-3">
-                {domainData.connections?.ip_addresses && domainData.connections.ip_addresses.length > 0 ? (
-                  <div className="p-3 bg-background rounded-lg border border-border">
-                    <span className="text-secondary text-xs block mb-2 font-medium">Resolved IP Addresses</span>
-                    <div className="flex flex-wrap gap-2">
-                      {domainData.connections.ip_addresses.map((ip, i) => (
-                        <span key={i} className="text-xs font-mono px-2.5 py-1 bg-card rounded border border-border text-foreground font-semibold">
-                          {ip}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-background rounded-lg border border-border">
-                    <span className="text-secondary text-xs block mb-1">Primary Network IP</span>
-                    <span className="text-foreground font-mono font-semibold text-sm">
-                      {domainData.isp !== 'Unknown' ? domainData.isp : 'Resolved via DNS'}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
+                  <span className="text-secondary text-sm">Autonomous System (ASN)</span>
+                  <span className="text-foreground font-mono text-sm font-semibold truncate max-w-[220px]">
+                    {domainData.connections?.asn_info?.asn || 'Global Network'}
+                  </span>
+                </div>
 
-                <div className="flex justify-between items-center p-2.5 bg-background rounded-lg border border-border">
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
+                  <span className="text-secondary text-sm">VirusTotal Status</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                    isVtMalicious ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+                  }`}>
+                    {isVtMalicious ? `${vtStats.malicious} Malicious Engines` : 'Clean Reputation'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border">
                   <span className="text-secondary text-sm">Last Reported</span>
                   <span className="text-foreground font-medium">{domainData.last_reported || 'Never'}</span>
                 </div>
@@ -403,69 +533,146 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
         </div>
       )}
 
-      {/* ──── TAB 2: DOMAIN THREATS ──── */}
-      {activeTab === 'threats' && (
+      {/* ──── TAB 2: VIRUSTOTAL MULTI-ENGINE TELEMETRY ──── */}
+      {activeTab === 'virustotal' && (
         <div className="space-y-6">
+          {/* VirusTotal Hero Score Card */}
           <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-primary" />
-              Detected Domain Threats ({domainData.threats.length})
-            </h3>
-
-            {domainData.threats.length > 0 ? (
-              <div className="space-y-3">
-                {domainData.threats.map((threat, index) => (
-                  <div key={index} className="bg-background border border-border rounded-xl p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded border ${getRiskColor(threat.severity)}`}>
-                            {threat.severity}
-                          </span>
-                          <span className="text-foreground font-semibold text-sm">{threat.type}</span>
-                        </div>
-                        {threat.source && (
-                          <span className="text-xs text-secondary">Source: {threat.source}</span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-primary">{threat.confidence}%</div>
-                        <div className="text-[10px] text-secondary">Confidence</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-secondary mt-2 pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>First seen: {threat.first_seen}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>Last seen: {threat.last_seen}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Radio className="w-6 h-6 text-blue-400" />
+                  VirusTotal Multi-Antivirus Engine Reputation
+                </h3>
+                <p className="text-xs text-secondary mt-1">
+                  Aggregated threat detection from 90+ antivirus and URL scanning security vendors
+                </p>
               </div>
-            ) : (
-              <div className="text-center py-12 text-secondary bg-background rounded-xl border border-border">
-                <Shield className="w-12 h-12 mx-auto mb-2 text-emerald-400" />
-                <p className="text-foreground font-semibold">No domain threats detected</p>
-                <p className="text-xs text-secondary mt-1">Domain is clean according to current intelligence feeds.</p>
+
+              <div className={`px-4 py-2 rounded-xl border text-center ${
+                isVtMalicious 
+                  ? 'bg-red-500/15 border-red-500/30 text-red-400' 
+                  : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+              }`}>
+                <div className="text-2xl font-mono font-bold">
+                  {vtData?.detection_ratio || `${vtStats.malicious}/${totalEngines}`}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold">
+                  {isVtMalicious ? 'Threat Detected' : 'Clean / Safe'}
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Engine Stats Pillars */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-background border border-border rounded-xl p-4 text-center">
+                <div className="text-xs text-secondary mb-1 flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-red-400" /> Malicious
+                </div>
+                <div className="text-2xl font-bold text-red-400">{vtStats.malicious}</div>
+              </div>
+
+              <div className="bg-background border border-border rounded-xl p-4 text-center">
+                <div className="text-xs text-secondary mb-1 flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" /> Suspicious
+                </div>
+                <div className="text-2xl font-bold text-amber-400">{vtStats.suspicious}</div>
+              </div>
+
+              <div className="bg-background border border-border rounded-xl p-4 text-center">
+                <div className="text-xs text-secondary mb-1 flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> Harmless
+                </div>
+                <div className="text-2xl font-bold text-emerald-400">{vtStats.harmless}</div>
+              </div>
+
+              <div className="bg-background border border-border rounded-xl p-4 text-center">
+                <div className="text-xs text-secondary mb-1 flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-slate-400" /> Undetected
+                </div>
+                <div className="text-2xl font-bold text-foreground">{vtStats.undetected}</div>
+              </div>
+            </div>
+
+            {/* Vendor Categorizations & Tags */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-background border border-border rounded-xl p-4">
+                <span className="text-xs text-secondary font-medium block mb-2">Security Vendor Categorization</span>
+                {vtData?.categories && vtData.categories.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {vtData.categories.map((cat, i) => (
+                      <span key={i} className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-lg border border-primary/20">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-secondary">General Web Infrastructure</p>
+                )}
+              </div>
+
+              <div className="bg-background border border-border rounded-xl p-4">
+                <span className="text-xs text-secondary font-medium block mb-2">Community Trust & Network</span>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-secondary">VirusTotal Reputation</span>
+                    <span className="text-foreground font-semibold font-mono">{vtData?.reputation || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary">Community Votes (Harmless)</span>
+                    <span className="text-emerald-400 font-semibold">{vtData?.total_votes?.harmless || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary">Community Votes (Malicious)</span>
+                    <span className="text-red-400 font-semibold">{vtData?.total_votes?.malicious || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Flagged Antivirus Engines */}
+            {vtData?.flagged_engines && vtData.flagged_engines.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  Flagged Security Engines ({vtData.flagged_engines.length})
+                </h4>
+                <div className="space-y-2">
+                  {vtData.flagged_engines.map((eng, i) => (
+                    <div key={i} className="bg-background border border-red-500/20 rounded-lg p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-red-400" />
+                        <span className="font-semibold text-foreground text-sm">{eng.engine_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30 uppercase">
+                          {eng.result}
+                        </span>
+                        <span className="text-xs text-secondary">{eng.category}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ──── TAB 3: VULNERABILITIES ──── */}
+      {/* ──── TAB 3: VULNERABILITIES (NVD / CVEs) ──── */}
       {activeTab === 'vulnerabilities' && (
         <div className="space-y-6">
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
-                Vulnerability Assessment (NVD)
-              </h3>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  Vulnerability Assessment (NVD / CVE Database)
+                </h3>
+                <p className="text-xs text-secondary mt-1">
+                  National Vulnerability Database intelligence & CVSS impact scoring
+                </p>
+              </div>
 
               {/* Severity Filter */}
               <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
@@ -492,13 +699,13 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
                 </div>
               </div>
               <div className="bg-background border border-border rounded-xl p-4">
-                <div className="text-xs text-secondary mb-1">High/Critical</div>
+                <div className="text-xs text-secondary mb-1">High & Critical CVEs</div>
                 <div className="text-2xl font-bold text-danger">
                   {domainData.high_critical_vulnerabilities || 0}
                 </div>
               </div>
               <div className="bg-background border border-border rounded-xl p-4">
-                <div className="text-xs text-secondary mb-1">Risk Score</div>
+                <div className="text-xs text-secondary mb-1">Vulnerability Risk Score</div>
                 <div className="text-2xl font-bold text-foreground">
                   {domainData.vulnerability_risk_score || 20}/100
                 </div>
@@ -592,7 +799,63 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
         </div>
       )}
 
-      {/* ──── TAB 4: SSL CERTIFICATE ──── */}
+      {/* ──── TAB 4: THREAT MATRIX ──── */}
+      {activeTab === 'threats' && (
+        <div className="space-y-6">
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-primary" />
+              Detected Threat Intelligence Matrix ({domainData.threats.length})
+            </h3>
+
+            {domainData.threats.length > 0 ? (
+              <div className="space-y-3">
+                {domainData.threats.map((threat, index) => (
+                  <div key={index} className="bg-background border border-border rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded border ${getRiskColor(threat.severity)}`}>
+                            {threat.severity}
+                          </span>
+                          <span className="text-foreground font-semibold text-sm">{threat.type}</span>
+                          {threat.source && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold ${getSourceBadge(threat.source)}`}>
+                              {threat.source}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-primary">{threat.confidence}%</div>
+                        <div className="text-[10px] text-secondary">Confidence</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-secondary mt-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>First seen: {threat.first_seen}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>Last seen: {threat.last_seen}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-secondary bg-background rounded-xl border border-border">
+                <Shield className="w-12 h-12 mx-auto mb-2 text-emerald-400" />
+                <p className="text-foreground font-semibold">No domain threats detected</p>
+                <p className="text-xs text-secondary mt-1">Domain is clean according to current threat feeds.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ──── TAB 5: SSL CERTIFICATE ──── */}
       {activeTab === 'ssl' && (
         <div className="space-y-6">
           <div className="bg-card border border-border rounded-xl p-6">
@@ -631,7 +894,6 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
               </div>
             </div>
 
-            {/* Deep Certificate Component */}
             {companyId && (
               <div className="pt-4 border-t border-border">
                 <CertificateDetails companyId={companyId} domain={domain} />
@@ -641,10 +903,9 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
         </div>
       )}
 
-      {/* ──── TAB 5: DNS & FEEDS ──── */}
+      {/* ──── TAB 6: DNS & FEEDS ──── */}
       {activeTab === 'dns' && (
         <div className="space-y-6">
-          {/* DNS Records */}
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Server className="w-5 h-5 text-primary" />
@@ -654,7 +915,7 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
             <div className="grid grid-cols-3 gap-4 text-center mb-6">
               <div className="bg-background border border-border rounded-xl p-4">
                 <div className="text-3xl font-bold text-primary">{domainData.dns_records.a_records}</div>
-                <div className="text-xs text-secondary mt-1">A Records</div>
+                <div className="text-xs text-secondary mt-1">A Records (IPs)</div>
               </div>
               <div className="bg-background border border-border rounded-xl p-4">
                 <div className="text-3xl font-bold text-primary">{domainData.dns_records.mx_records}</div>
@@ -666,58 +927,6 @@ export default function DomainDetails({ domain, companyId }: DomainDetailsProps)
               </div>
             </div>
           </div>
-
-          {/* Feeds Data */}
-          {(domainData.urlscan_data || domainData.abuseipdb_data || domainData.virustotal_data || domainData.alienvault_data) && (
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Intelligence Feed Summary
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {domainData.urlscan_data && (
-                  <div className="bg-background border border-border rounded-xl p-4">
-                    <h4 className="font-semibold text-foreground mb-3 text-sm">URLScan.io</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-secondary">Total Scans</span>
-                        <span className="text-foreground font-semibold">{domainData.urlscan_data.total_scans}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-secondary">Malicious</span>
-                        <span className="text-danger font-semibold">{domainData.urlscan_data.malicious_scans}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-secondary">Suspicious</span>
-                        <span className="text-warning font-semibold">{domainData.urlscan_data.suspicious_scans}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {domainData.virustotal_data && (
-                  <div className="bg-background border border-border rounded-xl p-4">
-                    <h4 className="font-semibold text-foreground mb-3 text-sm">VirusTotal</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-secondary">Reputation</span>
-                        <span className="text-foreground font-semibold">{domainData.virustotal_data.reputation}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-secondary">Malicious Detections</span>
-                        <span className="text-danger font-semibold">{domainData.virustotal_data.last_analysis_stats.malicious}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-secondary">Harmless Detections</span>
-                        <span className="text-success font-semibold">{domainData.virustotal_data.last_analysis_stats.harmless}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

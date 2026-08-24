@@ -60,7 +60,8 @@ export default function DomainRiskAnalysis() {
     setAnalysis(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/domain-analysis/analyze?domain=${encodeURIComponent(domainInput)}`);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com';
+      const response = await fetch(`${API_URL}/api/domain-analysis/analyze?domain=${encodeURIComponent(domainInput)}`);
       
       if (!response.ok) {
         throw new Error('Failed to analyze domain');

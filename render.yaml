@@ -48,5 +48,5 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: NEXT_PUBLIC_API_URL
-        value: https://vajra-r1n3.onrender.com
+        value: https://vajra-9pjh.onrender.com
     healthCheckPath: /

@@ -11,6 +11,9 @@ class ThreatItem(BaseModel):
     first_seen: str
     last_seen: str
     confidence: int
+    source: Optional[str] = None
+
+    model_config = {"extra": "allow"}
 
 class DomainAnalysisResponse(BaseModel):
     target: str
@@ -22,9 +25,13 @@ class DomainAnalysisResponse(BaseModel):
     country: Optional[str] = None
     isp: Optional[str] = None
     abuse_confidence_score: Optional[int] = None
+    total_reports: Optional[int] = None
     reputation_score: Optional[int] = None
     pulse_count: Optional[int] = None
     urlscan_data: Optional[dict] = None
+    virustotal_data: Optional[dict] = None
+    abuseipdb_data: Optional[dict] = None
+    alienvault_data: Optional[dict] = None
     domain_age_days: Optional[int] = None
     ssl_certificate: Optional[dict] = None
     dns_records: Optional[dict] = None
@@ -32,6 +39,13 @@ class DomainAnalysisResponse(BaseModel):
     whois_data: Optional[dict] = None
     gridinsoft_data: Optional[dict] = None
     domscan_data: Optional[dict] = None
+    vulnerabilities: Optional[List[dict]] = None
+    total_vulnerabilities: Optional[int] = None
+    vulnerability_risk_score: Optional[int] = None
+    high_critical_vulnerabilities: Optional[int] = None
+    connections: Optional[dict] = None
+
+    model_config = {"extra": "allow"}
 
 @router.get("/analyze", response_model=DomainAnalysisResponse)
 async def analyze_domain(domain: str = Query(..., description="Domain or IP address to analyze")):

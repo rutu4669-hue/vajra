@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 import json
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from typing import List, Optional
 from datetime import datetime
 
 from database.database import get_db
 from models.company import Company, CompanyThreat, CompanyRiskAssessment
+from models.user import User
+from auth.dependencies import get_optional_current_user
 from schemas.company import (
     CompanyCreate, CompanyUpdate, CompanyResponse, CompanyWithDetails,
     CompanyThreatCreate, CompanyThreatResponse,
@@ -19,25 +22,71 @@ router = APIRouter()
 
 # Company CRUD Operations
 @router.post("/", response_model=CompanyResponse)
-async def create_company(company: CompanyCreate, db: Session = Depends(get_db)):
-    """Create a new company for monitoring"""
-    # Check if domain already exists
-    existing_company = db.query(Company).filter(Company.domain == company.domain).first()
-    if existing_company:
-        if not existing_company.is_active:
-            # Reactivate and update existing company
-            existing_company.name = company.name
-            existing_company.industry = company.industry
-            existing_company.description = company.description
-            existing_company.monitoring_enabled = company.monitoring_enabled
-            existing_company.is_active = True
-            db.commit()
-            db.refresh(existing_company)
-            return existing_company
-        else:
-            raise HTTPException(status_code=400, detail="Domain is already being monitored")
+async def create_company(
+    company: CompanyCreate, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Create a new company for monitoring with user attribution and role separation"""
+    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
     
+    # Determine visibility and creator info
+    if is_admin:
+        # Admin creates global companies by default unless explicitly specified
+        is_global = company.is_global if company.is_global is not None else True
+        created_by_id = current_user.id if current_user else None
+        created_by_name = current_user.name if current_user else "Admin"
+        created_by_email = current_user.email if current_user else "admin@indigo.com"
+    elif current_user:
+        # Regular user creates user-scoped private company
+        is_global = False
+        created_by_id = current_user.id
+        created_by_name = current_user.name
+        created_by_email = current_user.email
+    else:
+        # Fallback if no user authenticated
+        is_global = True
+        created_by_id = None
+        created_by_name = "System"
+        created_by_email = None
+
+    # Check for domain conflicts:
+    # 1. Is there an active global company with this domain?
+    global_company = db.query(Company).filter(
+        Company.domain == company.domain,
+        Company.is_global == True,
+        Company.is_active == True
+    ).first()
+    if global_company:
+        raise HTTPException(
+            status_code=400, 
+            detail="Domain is already being monitored globally by administrators"
+        )
+    
+    # 2. Did this specific user already add this domain?
+    if created_by_id:
+        user_company = db.query(Company).filter(
+            Company.domain == company.domain,
+            Company.created_by_user_id == created_by_id
+        ).first()
+        if user_company:
+            if not user_company.is_active:
+                user_company.name = company.name
+                user_company.industry = company.industry
+                user_company.description = company.description
+                user_company.monitoring_enabled = company.monitoring_enabled
+                user_company.is_active = True
+                db.commit()
+                db.refresh(user_company)
+                return user_company
+            else:
+                raise HTTPException(status_code=400, detail="Domain is already in your monitoring list")
+
     company_data = company.model_dump()
+    company_data["is_global"] = is_global
+    company_data["created_by_user_id"] = created_by_id
+    company_data["created_by_user_name"] = created_by_name
+    company_data["created_by_user_email"] = created_by_email
     
     db_company = Company(**company_data)
     db.add(db_company)
@@ -57,20 +106,60 @@ async def get_companies(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     active_only: bool = True,
-    db: Session = Depends(get_db)
+    filter_by: Optional[str] = Query(None, description="Filter: all, global, my, users"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
-    """Get all companies"""
+    """Get companies filtered by user role and ownership"""
     query = db.query(Company)
     if active_only:
         query = query.filter(Company.is_active == True)
-    return query.offset(skip).limit(limit).all()
+        
+    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
+    
+    if is_admin:
+        # Admin can see all companies (global + all users' monitored companies)
+        if filter_by == "global":
+            query = query.filter(Company.is_global == True)
+        elif filter_by == "my":
+            query = query.filter(Company.created_by_user_id == current_user.id)
+        elif filter_by == "users":
+            query = query.filter(Company.is_global == False)
+    elif current_user:
+        # Regular logged-in user can only see Global companies OR their own monitored companies
+        if filter_by == "global":
+            query = query.filter(Company.is_global == True)
+        elif filter_by == "my":
+            query = query.filter(Company.created_by_user_id == current_user.id, Company.is_global == False)
+        else:
+            query = query.filter(
+                or_(
+                    Company.is_global == True,
+                    Company.created_by_user_id == current_user.id
+                )
+            )
+    else:
+        # Unauthenticated: show global companies only
+        query = query.filter(Company.is_global == True)
+        
+    return query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
 
 @router.get("/{company_id}", response_model=CompanyWithDetails)
-async def get_company(company_id: int, db: Session = Depends(get_db)):
-    """Get company details with latest risk assessment and threat counts"""
+async def get_company(
+    company_id: int, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Get company details with latest risk assessment, threat counts, and access verification"""
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
+    
+    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
+    # Verify access: global OR created by current user OR admin
+    if not company.is_global and not is_admin:
+        if not current_user or company.created_by_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied: You do not have permission to view this company")
     
     # Get latest risk assessment
     latest_assessment = db.query(CompanyRiskAssessment)\
@@ -94,13 +183,27 @@ async def get_company(company_id: int, db: Session = Depends(get_db)):
     return company_dict
 
 @router.put("/{company_id}", response_model=CompanyResponse)
-async def update_company(company_id: int, company_update: CompanyUpdate, db: Session = Depends(get_db)):
-    """Update company details"""
+async def update_company(
+    company_id: int, 
+    company_update: CompanyUpdate, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Update company details with role/ownership permission check"""
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     
+    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
+    if not is_admin:
+        if not current_user or company.created_by_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Permission denied: You can only update companies you created")
+    
     update_data = company_update.model_dump(exclude_unset=True)
+    # Non-admins cannot toggle is_global
+    if not is_admin and "is_global" in update_data:
+        del update_data["is_global"]
+
     for field, value in update_data.items():
         setattr(company, field, value)
     
@@ -114,11 +217,22 @@ async def update_company(company_id: int, company_update: CompanyUpdate, db: Ses
     return company
 
 @router.delete("/{company_id}")
-async def delete_company(company_id: int, db: Session = Depends(get_db)):
-    """Delete a company permanently from monitoring"""
+async def delete_company(
+    company_id: int, 
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Delete a company permanently from monitoring with role permission check"""
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
+    
+    is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
+    if not is_admin:
+        if company.is_global:
+            raise HTTPException(status_code=403, detail="Permission denied: Regular users cannot remove global admin companies")
+        if not current_user or company.created_by_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Permission denied: You can only delete companies you have added")
     
     db.delete(company)
     db.commit()
@@ -231,6 +345,7 @@ async def analyze_company(company_id: int, db: Session = Depends(get_db)):
     analysis_result = await domain_service.analyze_domain(company.domain)
     
     # Create risk assessment
+    vuln_count = analysis_result.get("total_vulnerabilities") or len(analysis_result.get("vulnerabilities", [])) or analysis_result.get("nvd_data", {}).get("total_vulnerabilities", 0)
     risk_assessment = CompanyRiskAssessment(
         company_id=company_id,
         risk_level=analysis_result.get("risk_level", "MEDIUM"),
@@ -238,7 +353,7 @@ async def analyze_company(company_id: int, db: Session = Depends(get_db)):
         active_incidents=analysis_result.get("active_incidents", 0),
         abuse_confidence_score=analysis_result.get("abuse_confidence_score", 0),
         reputation_score=analysis_result.get("reputation_score", 50),
-        vulnerabilities_count=analysis_result.get("nvd_data", {}).get("total_vulnerabilities", 0),
+        vulnerabilities_count=vuln_count,
         ssl_valid=analysis_result.get("ssl_certificate", {}).get("valid", True),
         domain_age_days=analysis_result.get("domain_age_days"),
         country=analysis_result.get("country"),
@@ -285,6 +400,40 @@ async def analyze_company(company_id: int, db: Session = Depends(get_db)):
             "alienvault": "alienvault_data" in analysis_result,
             "whoisxml": "whois_data" in analysis_result
         }
+    }
+
+@router.get("/{company_id}/analysis")
+async def get_company_analysis(company_id: int, refresh: bool = False, db: Session = Depends(get_db)):
+    """Get full domain intelligence analysis (including VirusTotal, Vulnerabilities, Resolved IPs) for a company"""
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    # Check if we have recent stored assessment details unless refresh requested
+    if not refresh:
+        latest_assessment = db.query(CompanyRiskAssessment)\
+            .filter(CompanyRiskAssessment.company_id == company_id)\
+            .order_by(CompanyRiskAssessment.created_at.desc())\
+            .first()
+        if latest_assessment and latest_assessment.assessment_details:
+            try:
+                data = json.loads(latest_assessment.assessment_details)
+                return {
+                    "company_id": company_id,
+                    "domain": company.domain,
+                    "analysis_data": data,
+                    "from_cache": True
+                }
+            except Exception:
+                pass
+    
+    # Run fresh live analysis
+    analysis_result = await domain_service.analyze_domain(company.domain)
+    return {
+        "company_id": company_id,
+        "domain": company.domain,
+        "analysis_data": analysis_result,
+        "from_cache": False
     }
 
 # Threat History and Trends

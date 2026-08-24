@@ -9,7 +9,7 @@ class AdminUserResponse(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -22,7 +22,7 @@ class AdminUserDetail(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -55,17 +55,21 @@ class AuditLog(BaseModel):
     user_id: int
     action: str
     resource_type: str
-    resource_id: Optional[int]
-    details: Optional[str]
+    resource_id: Optional[int] = None
+    details: Optional[str] = None
     timestamp: datetime
-    ip_address: Optional[str]
+    ip_address: Optional[str] = None
     
     class Config:
         from_attributes = True
 
 class AdminStats(BaseModel):
-    total_users: int
-    active_users: int
-    total_roles: List[str]
-    recent_logins: int
-    system_status: str
+    total_users: int = 0
+    active_users: int = 0
+    total_roles: List[str] = []
+    recent_logins: int = 0
+    system_status: str = "operational"
+    total_companies: int = 0
+    global_companies: int = 0
+    user_companies: int = 0
+    total_threats: int = 0

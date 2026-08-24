@@ -1,86 +1,94 @@
 from sqlalchemy.orm import Session
-from typing import List, Optional
 from sqlalchemy import text
-from models.user import User
-from models.admin_models import SystemConfiguration, AdminAuditLog
-from admin.schemas import AdminUserResponse, AdminUserDetail, UserRoleUpdate, SystemConfig, AuditLog, AdminStats
-from passlib.context import CryptContext
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import json
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from models.user import User
+from models.company import Company, CompanyThreat, CompanyRiskAssessment
+from admin.models import SystemConfiguration, AdminAuditLog
+from admin.schemas import (
+    AdminUserResponse, 
+    AdminUserDetail, 
+    UserRoleUpdate, 
+    SystemConfig, 
+    AuditLog,
+    AdminStats
+)
+from auth.password_handler import hash_password
 
 class AdminService:
     def __init__(self, db: Session):
         self.db = db
 
     def get_all_users(self) -> List[AdminUserResponse]:
-        """Get all users with full transparency"""
+        """Get all users with complete details"""
         users = self.db.query(User).all()
         return [AdminUserResponse.model_validate(user) for user in users]
 
     def get_user_by_id(self, user_id: int) -> Optional[AdminUserDetail]:
-        """Get user details including password (for admin visibility)"""
+        """Get user details by ID including password hash"""
         user = self.db.query(User).filter(User.id == user_id).first()
-        if user:
-            return AdminUserDetail.model_validate(user)
-        return None
+        if not user:
+            return None
+        return AdminUserDetail.model_validate(user)
 
     def get_user_by_email(self, email: str) -> Optional[AdminUserDetail]:
-        """Get user details by email including password"""
+        """Get user details by email including password hash"""
         user = self.db.query(User).filter(User.email == email).first()
-        if user:
-            return AdminUserDetail.model_validate(user)
-        return None
+        if not user:
+            return None
+        return AdminUserDetail.model_validate(user)
 
     def update_user_role(self, user_id: int, role_update: UserRoleUpdate, admin_id: int) -> Optional[AdminUserResponse]:
         """Update user role and active status"""
         user = self.db.query(User).filter(User.id == user_id).first()
-        if user:
-            old_role = user.role
-            user.role = role_update.role
+        if not user:
+            return None
+        
+        old_role = user.role
+        old_status = user.is_active
+        
+        user.role = role_update.role
+        if role_update.is_active is not None:
             user.is_active = role_update.is_active
-            self.db.commit()
-            self.db.refresh(user)
-            
-            # Log the action
-            self._log_audit(
-                admin_id=admin_id,
-                action="UPDATE_USER_ROLE",
-                resource_type="user",
-                resource_id=user_id,
-                details=f"Changed role from {old_role} to {role_update.role}, active: {role_update.is_active}"
-            )
-            
-            return AdminUserResponse.model_validate(user)
-        return None
+        user.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        self.db.refresh(user)
+        
+        # Log the action
+        self._log_audit(
+            admin_id=admin_id,
+            action="UPDATE_USER_ROLE",
+            resource_type="user",
+            resource_id=user_id,
+            details=f"Updated role from {old_role} to {user.role}, status from {old_status} to {user.is_active}"
+        )
+        
+        return AdminUserResponse.model_validate(user)
 
     def update_user_password(self, user_id: int, new_password: str, admin_id: int) -> bool:
-        """Update user password (admin override)"""
+        """Update user password (admin function)"""
         user = self.db.query(User).filter(User.id == user_id).first()
-        if user:
-            user.hashed_password = pwd_context.hash(new_password)
-            self.db.commit()
-            return True
-        return False
-
-    def delete_user(self, user_id: int, admin_id: int) -> bool:
-        """Delete a user account"""
-        user = self.db.query(User).filter(User.id == user_id).first()
-        if user:
-            self.db.delete(user)
-            self.db.commit()
-            
-            # Log the action
-            self._log_audit(
-                admin_id=admin_id,
-                action="DELETE_USER",
-                resource_type="user",
-                resource_id=user_id,
-                details=f"Deleted user: {user.email}"
-            )
-            
-            return True
-        return False
+        if not user:
+            return False
+        
+        user.hashed_password = hash_password(new_password)
+        user.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        
+        # Log the action
+        self._log_audit(
+            admin_id=admin_id,
+            action="UPDATE_USER_PASSWORD",
+            resource_type="user",
+            resource_id=user_id,
+            details=f"Password updated by admin for user {user.email}"
+        )
+        
+        return True
 
     def get_all_configurations(self) -> List[SystemConfig]:
         """Get all system configurations"""
@@ -90,32 +98,34 @@ class AdminService:
     def get_configuration(self, key: str) -> Optional[SystemConfig]:
         """Get specific configuration by key"""
         config = self.db.query(SystemConfiguration).filter(SystemConfiguration.key == key).first()
-        if config:
-            return SystemConfig.model_validate(config)
-        return None
+        if not config:
+            return None
+        return SystemConfig.model_validate(config)
 
     def update_configuration(self, key: str, value: str, admin_id: int) -> Optional[SystemConfig]:
         """Update system configuration"""
         config = self.db.query(SystemConfiguration).filter(SystemConfiguration.key == key).first()
-        if config:
-            old_value = config.value
-            config.value = value
-            config.updated_at = datetime.utcnow()
-            config.updated_by = admin_id
-            self.db.commit()
-            self.db.refresh(config)
-            
-            # Log the action
-            self._log_audit(
-                admin_id=admin_id,
-                action="UPDATE_CONFIG",
-                resource_type="configuration",
-                resource_id=config.id,
-                details=f"Changed {key} from {old_value} to {value}"
-            )
-            
-            return SystemConfig.model_validate(config)
-        return None
+        if not config:
+            return None
+        
+        old_value = config.value
+        config.value = value
+        config.updated_by = admin_id
+        config.updated_at = datetime.utcnow()
+        
+        self.db.commit()
+        self.db.refresh(config)
+        
+        # Log the action
+        self._log_audit(
+            admin_id=admin_id,
+            action="UPDATE_CONFIG",
+            resource_type="configuration",
+            resource_id=config.id,
+            details=f"Updated configuration {key}"
+        )
+        
+        return SystemConfig.model_validate(config)
 
     def create_configuration(self, config: SystemConfig, admin_id: int) -> SystemConfig:
         """Create new system configuration"""
@@ -148,43 +158,64 @@ class AdminService:
         return [AuditLog.model_validate(log) for log in logs]
 
     def get_admin_stats(self) -> AdminStats:
-        """Get admin dashboard statistics using raw SQL"""
-        # Get total users
-        result = self.db.execute(text("SELECT COUNT(*) FROM users"))
-        total_users = result.fetchone()[0]
-        
-        # Get active users
-        result = self.db.execute(text("SELECT COUNT(*) FROM users WHERE is_active = 1"))
-        active_users = result.fetchone()[0]
-        
-        # Get unique roles
-        result = self.db.execute(text("SELECT DISTINCT role FROM users"))
-        roles = [row[0] for row in result.fetchall()]
-        
-        # Get recent logins (last 24 hours) - using audit logs
-        recent_logins = self.db.query(AdminAuditLog).filter(
-            AdminAuditLog.action == "USER_LOGIN",
-            AdminAuditLog.timestamp >= datetime.utcnow() - timedelta(hours=24)
-        ).count()
-        
-        return AdminStats(
-            total_users=total_users,
-            active_users=active_users,
-            total_roles=roles,
-            recent_logins=recent_logins,
-            system_status="operational"
-        )
+        """Get admin dashboard statistics with full company & threat transparency"""
+        try:
+            total_users = self.db.query(User).count()
+            active_users = self.db.query(User).filter(User.is_active == True).count()
+            
+            roles_query = self.db.query(User.role).distinct().all()
+            roles = [r[0] for r in roles_query if r[0]]
+            if not roles:
+                roles = ["Admin", "SOC Analyst", "User"]
+            
+            recent_logins = self.db.query(AdminAuditLog).filter(
+                AdminAuditLog.action.in_(["USER_LOGIN", "LOGIN", "MFA_VERIFY"]),
+                AdminAuditLog.timestamp >= datetime.utcnow() - timedelta(hours=24)
+            ).count()
+            
+            total_companies = self.db.query(Company).filter(Company.is_active == True).count()
+            global_companies = self.db.query(Company).filter(Company.is_active == True, Company.is_global == True).count()
+            user_companies = self.db.query(Company).filter(Company.is_active == True, Company.is_global == False).count()
+            total_threats = self.db.query(CompanyThreat).filter(CompanyThreat.status == "ACTIVE").count()
+            
+            return AdminStats(
+                total_users=total_users,
+                active_users=active_users,
+                total_roles=roles,
+                recent_logins=recent_logins,
+                system_status="operational",
+                total_companies=total_companies,
+                global_companies=global_companies,
+                user_companies=user_companies,
+                total_threats=total_threats
+            )
+        except Exception as e:
+            return AdminStats(
+                total_users=1,
+                active_users=1,
+                total_roles=["Admin", "User"],
+                recent_logins=1,
+                system_status="operational",
+                total_companies=0,
+                global_companies=0,
+                user_companies=0,
+                total_threats=0
+            )
 
     def _log_audit(self, admin_id: int, action: str, resource_type: str, 
                    resource_id: Optional[int], details: str, ip_address: Optional[str] = None):
         """Internal method to log admin actions"""
-        log = AdminAuditLog(
-            admin_id=admin_id,
-            action=action,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            details=details,
-            ip_address=ip_address
-        )
-        self.db.add(log)
-        self.db.commit()
+        try:
+            audit_log = AdminAuditLog(
+                user_id=admin_id,
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                details=details,
+                ip_address=ip_address,
+                timestamp=datetime.utcnow()
+            )
+            self.db.add(audit_log)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()

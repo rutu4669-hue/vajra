@@ -209,7 +209,10 @@ async def get_companies(
                 )
             )
     else:
-        query = query.filter(Company.is_global == True)
+        if filter_by == "global":
+            query = query.filter(Company.is_global == True)
+        elif filter_by == "users":
+            query = query.filter(Company.is_global == False)
         
     companies_list = query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
     results = []

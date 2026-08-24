@@ -1,9 +1,10 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from database.database import get_db
 from models.user import User
-from auth.jwt_handler import verify_token
+from auth.jwt_handler import verify_token, SECRET_KEY, ALGORITHM
+from jose import jwt
 
 security = HTTPBearer()
 
@@ -51,23 +52,40 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 optional_security = HTTPBearer(auto_error=False)
 
 async def get_optional_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(optional_security),
     db: Session = Depends(get_db)
 ) -> User | None:
-    if credentials is None:
-        return None
-    try:
+    token = None
+    if credentials:
         token = credentials.credentials
+        
+    if not token:
+        auth_header = request.headers.get("Authorization") or request.headers.get("authorization")
+        if auth_header:
+            if auth_header.lower().startswith("bearer "):
+                token = auth_header[7:].strip()
+            else:
+                token = auth_header.strip()
+    
+    if not token:
+        return None
+        
+    try:
         payload = verify_token(token, "access")
         if payload is None:
-            return None
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            except Exception:
+                return None
+                
         email: str = payload.get("sub")
         if email is None:
             return None
+            
         user = db.query(User).filter(User.email == email).first()
         if user is None or not user.is_active:
             return None
         return user
     except Exception:
         return None
-

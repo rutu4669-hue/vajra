@@ -93,6 +93,28 @@ async def lifespan(app: FastAPI):
         except Exception as seed_err:
             logger.error(f"Error seeding admin user: {seed_err}")
             db.rollback()
+            
+        # Seed default initial global companies if table is empty
+        try:
+            from models.company import Company
+            company_count = db.query(Company).count()
+            if company_count == 0:
+                default_companies = [
+                    {"name": "Google LLC", "domain": "google.com", "industry": "Technology", "description": "Global technology and cloud infrastructure leader", "is_global": True, "created_by_user_name": "System Admin", "created_by_user_email": "admin@indigo.com"},
+                    {"name": "Microsoft Corporation", "domain": "microsoft.com", "industry": "Technology", "description": "Enterprise cloud computing, software, and cybersecurity solutions", "is_global": True, "created_by_user_name": "System Admin", "created_by_user_email": "admin@indigo.com"},
+                    {"name": "Amazon AWS", "domain": "amazon.com", "industry": "Technology", "description": "E-commerce and comprehensive cloud computing infrastructure", "is_global": True, "created_by_user_name": "System Admin", "created_by_user_email": "admin@indigo.com"},
+                    {"name": "Cloudflare Inc.", "domain": "cloudflare.com", "industry": "Telecommunications", "description": "Web security, DDoS mitigation, and global edge network", "is_global": True, "created_by_user_name": "System Admin", "created_by_user_email": "admin@indigo.com"},
+                    {"name": "Apple Inc.", "domain": "apple.com", "industry": "Technology", "description": "Consumer electronics, software ecosystem, and digital services", "is_global": True, "created_by_user_name": "System Admin", "created_by_user_email": "admin@indigo.com"},
+                    {"name": "Cisco Systems", "domain": "cisco.com", "industry": "Telecommunications", "description": "Networking hardware, telecommunications, and cybersecurity solutions", "is_global": True, "created_by_user_name": "System Admin", "created_by_user_email": "admin@indigo.com"},
+                ]
+                for comp_info in default_companies:
+                    comp = Company(**comp_info, is_active=True, monitoring_enabled=True)
+                    db.add(comp)
+                db.commit()
+                logger.info("Default initial 6 monitored companies seeded successfully")
+        except Exception as comp_seed_err:
+            logger.error(f"Error seeding default companies: {comp_seed_err}")
+            db.rollback()
         finally:
             db.close()
     except Exception as e:

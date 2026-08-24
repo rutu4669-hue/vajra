@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
 
 export interface Company {
   id: number

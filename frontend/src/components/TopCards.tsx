@@ -80,7 +80,7 @@ export default function TopCards() {
     }
   }, [fetchCompanies])
 
-  const monitoredCount = companies?.length || 6
+  const monitoredCount = companies ? companies.length : 0
 
   const cards = [
     {

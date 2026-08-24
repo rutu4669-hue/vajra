@@ -24,12 +24,12 @@ class CompanyUpdate(BaseModel):
 
 class CompanyResponse(CompanyBase):
     id: int
-    is_active: bool
+    is_active: bool = True
     is_global: bool = True
     created_by_user_id: Optional[int] = None
     created_by_user_name: Optional[str] = None
     created_by_user_email: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     last_analyzed: Optional[datetime] = None
     

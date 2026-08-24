@@ -246,21 +246,48 @@ async def get_companies(
     companies_list = query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
     results = []
     for c in companies_list:
-        latest_assessment = db.query(CompanyRiskAssessment)\
-            .filter(CompanyRiskAssessment.company_id == c.id)\
-            .order_by(CompanyRiskAssessment.created_at.desc())\
-            .first()
-        active_threats = db.query(CompanyThreat)\
-            .filter(CompanyThreat.company_id == c.id, CompanyThreat.status == "ACTIVE")\
-            .count()
-        total_threats = db.query(CompanyThreat)\
-            .filter(CompanyThreat.company_id == c.id)\
-            .count()
-        c_dict = CompanyResponse.model_validate(c).model_dump()
-        c_dict["latest_risk_assessment"] = CompanyRiskAssessmentResponse.model_validate(latest_assessment) if latest_assessment else None
-        c_dict["active_threats_count"] = active_threats
-        c_dict["total_threats_count"] = total_threats
-        results.append(c_dict)
+        try:
+            latest_assessment = db.query(CompanyRiskAssessment)\
+                .filter(CompanyRiskAssessment.company_id == c.id)\
+                .order_by(CompanyRiskAssessment.created_at.desc())\
+                .first()
+            active_threats = db.query(CompanyThreat)\
+                .filter(CompanyThreat.company_id == c.id, CompanyThreat.status == "ACTIVE")\
+                .count()
+            total_threats = db.query(CompanyThreat)\
+                .filter(CompanyThreat.company_id == c.id)\
+                .count()
+                
+            assessment_data = None
+            if latest_assessment:
+                try:
+                    assessment_data = CompanyRiskAssessmentResponse.model_validate(latest_assessment)
+                except Exception:
+                    assessment_data = None
+
+            c_dict = {
+                "id": c.id,
+                "name": c.name or "Company",
+                "domain": c.domain or "",
+                "industry": c.industry,
+                "description": c.description,
+                "logo_url": c.logo_url,
+                "monitoring_enabled": bool(c.monitoring_enabled if c.monitoring_enabled is not None else True),
+                "is_active": bool(c.is_active if c.is_active is not None else True),
+                "is_global": bool(c.is_global if c.is_global is not None else True),
+                "created_by_user_id": c.created_by_user_id,
+                "created_by_user_name": c.created_by_user_name,
+                "created_by_user_email": c.created_by_user_email,
+                "created_at": c.created_at,
+                "updated_at": c.updated_at,
+                "last_analyzed": c.last_analyzed,
+                "latest_risk_assessment": assessment_data,
+                "active_threats_count": active_threats,
+                "total_threats_count": total_threats
+            }
+            results.append(c_dict)
+        except Exception:
+            continue
     return results
 
 @router.get("/{company_id}", response_model=CompanyWithDetails)

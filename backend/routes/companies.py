@@ -202,23 +202,35 @@ async def get_companies(
         if filter_by == "global":
             query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
         elif filter_by == "my":
-            query = query.filter(Company.created_by_user_id == current_user.id, Company.is_global == False)
+            query = query.filter(
+                or_(
+                    Company.created_by_user_id == current_user.id,
+                    Company.created_by_user_email == current_user.email
+                )
+            )
         elif filter_by == "users":
-            query = query.filter(Company.created_by_user_id == current_user.id, Company.is_global == False)
+            query = query.filter(
+                or_(
+                    Company.created_by_user_id == current_user.id,
+                    Company.created_by_user_email == current_user.email
+                )
+            )
         else:
+            # Default for regular user: see all Global admin domains + their own private domains
             query = query.filter(
                 or_(
                     Company.is_global == True,
                     Company.is_global.is_(None),
-                    Company.created_by_user_id == current_user.id
+                    Company.created_by_user_id == current_user.id,
+                    Company.created_by_user_email == current_user.email
                 )
             )
     else:
-        if filter_by == "global":
-            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
-        elif filter_by == "users":
+        # Default for unauthenticated or public: see all global/system domains
+        if filter_by == "users":
             query = query.filter(Company.is_global == False)
-        # default: return all companies
+        else:
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
         
     companies_list = query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
     results = []

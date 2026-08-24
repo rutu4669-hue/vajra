@@ -108,14 +108,17 @@ export default function CompaniesPage() {
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true)
+      const currentToken = useAuthStore.getState().token || token
       const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+      if (currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`
       }
       const res = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers })
       if (res.ok) {
         const data = await res.json()
-        setCompanies(data)
+        if (Array.isArray(data)) {
+          setCompanies(data)
+        }
       }
     } catch (err) {
       console.error('Failed to fetch companies:', err)
@@ -125,7 +128,11 @@ export default function CompaniesPage() {
   }, [token])
 
   useEffect(() => {
-    if (mounted) fetchCompanies()
+    if (mounted) {
+      fetchCompanies()
+      const timer = setTimeout(() => fetchCompanies(), 1500)
+      return () => clearTimeout(timer)
+    }
   }, [mounted, fetchCompanies])
 
   const handleAddCompany = async () => {
@@ -137,8 +144,9 @@ export default function CompaniesPage() {
 
     try {
       const cleanDomain = formData.domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+      const currentToken = useAuthStore.getState().token || token
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = `Bearer ${token}`
+      if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`
 
       const res = await fetch(`${API_URL}/api/companies/`, {
         method: 'POST',
@@ -170,8 +178,8 @@ export default function CompaniesPage() {
       })
       setCompanies(prev => [newCompany, ...prev.filter(c => c.id !== newCompany.id)])
       fetchCompanies()
-      setTimeout(() => fetchCompanies(), 2500)
-      setTimeout(() => fetchCompanies(), 6000)
+      setTimeout(() => fetchCompanies(), 2000)
+      setTimeout(() => fetchCompanies(), 5000)
     } catch (err: any) {
       setFormError(err.message || 'Failed to add company')
     } finally {
@@ -182,8 +190,9 @@ export default function CompaniesPage() {
   const handleAnalyze = async (companyId: number) => {
     setAnalyzingId(companyId)
     try {
+      const currentToken = useAuthStore.getState().token || token
       const headers: Record<string, string> = {}
-      if (token) headers['Authorization'] = `Bearer ${token}`
+      if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`
       const res = await fetch(`${API_URL}/api/companies/${companyId}/analyze`, {
         method: 'POST',
         headers
@@ -202,8 +211,9 @@ export default function CompaniesPage() {
     if (!confirm('Are you sure you want to remove this company from monitoring?')) return
     setDeletingId(companyId)
     try {
+      const currentToken = useAuthStore.getState().token || token
       const headers: Record<string, string> = {}
-      if (token) headers['Authorization'] = `Bearer ${token}`
+      if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`
       const res = await fetch(`${API_URL}/api/companies/${companyId}`, {
         method: 'DELETE',
         headers
@@ -228,8 +238,9 @@ export default function CompaniesPage() {
     setModalTab('overview')
     setSelectedAnalysis(null)
     try {
+      const currentToken = useAuthStore.getState().token || token
       const headers: Record<string, string> = {}
-      if (token) headers['Authorization'] = `Bearer ${token}`
+      if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`
       
       const [compRes, analysisRes] = await Promise.all([
         fetch(`${API_URL}/api/companies/${companyId}`, { headers }),
@@ -270,24 +281,25 @@ export default function CompaniesPage() {
   }
 
   // Count metrics for tabs
-  const globalCount = companies.filter(c => c.is_global).length
-  const myCount = companies.filter(c => user && c.created_by_user_id === Number(user.id)).length
-  const userAddedCount = companies.filter(c => !c.is_global).length
+  const globalCount = companies.filter(c => c.is_global !== false).length
+  const myCount = companies.filter(c => user && (String(c.created_by_user_id) === String(user.id) || (!c.is_global && c.created_by_user_email === user.email))).length
+  const userAddedCount = companies.filter(c => c.is_global === false).length
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.industry || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.created_by_user_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      (c.created_by_user_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.created_by_user_email || '').toLowerCase().includes(searchQuery.toLowerCase())
 
     if (!matchesSearch) return false
 
     if (activeTab === 'global') {
-      return c.is_global
+      return c.is_global !== false
     } else if (activeTab === 'my') {
-      return user && c.created_by_user_id === Number(user.id)
+      return user && (String(c.created_by_user_id) === String(user.id) || (!c.is_global && c.created_by_user_email === user.email))
     } else if (activeTab === 'users') {
-      return !c.is_global
+      return c.is_global === false
     }
     return true
   })

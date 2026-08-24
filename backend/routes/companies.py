@@ -63,6 +63,7 @@ async def perform_company_analysis_internal(company_id: int):
             db.add(threat)
         
         company.last_analyzed = datetime.utcnow()
+        company.is_active = True
         db.commit()
         db.refresh(risk_assessment)
         
@@ -88,7 +89,7 @@ async def create_company(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
-    """Create a new company for monitoring, save to DB, and immediately trigger background vulnerability & threat analysis"""
+    """Create or reactivate a company for monitoring, save to DB, and trigger background vulnerability & threat analysis"""
     is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
     
     # Determine visibility and creator info
@@ -108,47 +109,47 @@ async def create_company(
         created_by_name = "System"
         created_by_email = "system@indigo.com"
 
-    # Check for domain duplication
-    clean_domain = company.domain.strip().lower()
-    if is_global:
-        existing_global = db.query(Company).filter(Company.domain == clean_domain, Company.is_global == True).first()
-        if existing_global:
-            if not existing_global.is_active:
-                existing_global.is_active = True
-                db.commit()
-                db.refresh(existing_global)
-                background_tasks.add_task(perform_company_analysis_internal, existing_global.id)
-                comp_dict = CompanyResponse.model_validate(existing_global).model_dump()
-                comp_dict["latest_risk_assessment"] = None
-                comp_dict["active_threats_count"] = 0
-                comp_dict["total_threats_count"] = 0
-                return comp_dict
-            else:
-                raise HTTPException(status_code=400, detail="Global company with this domain already exists")
-    else:
-        if current_user:
-            user_company = db.query(Company).filter(
-                Company.domain == clean_domain,
-                Company.created_by_user_id == current_user.id,
-                Company.is_global == False
-            ).first()
-            if user_company:
-                if not user_company.is_active:
-                    user_company.is_active = True
-                    db.commit()
-                    db.refresh(user_company)
-                    background_tasks.add_task(perform_company_analysis_internal, user_company.id)
-                    comp_dict = CompanyResponse.model_validate(user_company).model_dump()
-                    comp_dict["latest_risk_assessment"] = None
-                    comp_dict["active_threats_count"] = 0
-                    comp_dict["total_threats_count"] = 0
-                    return comp_dict
-                else:
-                    raise HTTPException(status_code=400, detail="Domain is already in your monitoring list")
+    clean_domain = company.domain.strip().lower().replace("https://", "").replace("http://", "").split("/")[0]
+
+    # Check if this domain is already present in the database
+    existing = db.query(Company).filter(Company.domain == clean_domain).first()
+    if existing:
+        existing.is_active = True
+        if company.name:
+            existing.name = company.name
+        if company.industry:
+            existing.industry = company.industry
+        if company.description:
+            existing.description = company.description
+        if is_admin:
+            existing.is_global = True
+        existing.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(existing)
+        
+        background_tasks.add_task(perform_company_analysis_internal, existing.id)
+        
+        latest_assessment = db.query(CompanyRiskAssessment)\
+            .filter(CompanyRiskAssessment.company_id == existing.id)\
+            .order_by(CompanyRiskAssessment.created_at.desc())\
+            .first()
+        active_threats = db.query(CompanyThreat)\
+            .filter(CompanyThreat.company_id == existing.id, CompanyThreat.status == "ACTIVE")\
+            .count()
+        total_threats = db.query(CompanyThreat)\
+            .filter(CompanyThreat.company_id == existing.id)\
+            .count()
+            
+        comp_dict = CompanyResponse.model_validate(existing).model_dump()
+        comp_dict["latest_risk_assessment"] = CompanyRiskAssessmentResponse.model_validate(latest_assessment) if latest_assessment else None
+        comp_dict["active_threats_count"] = active_threats
+        comp_dict["total_threats_count"] = total_threats
+        return comp_dict
 
     company_data = company.model_dump()
     company_data["domain"] = clean_domain
     company_data["is_global"] = is_global
+    company_data["is_active"] = True
     company_data["created_by_user_id"] = created_by_id
     company_data["created_by_user_name"] = created_by_name
     company_data["created_by_user_email"] = created_by_email
@@ -185,34 +186,39 @@ async def get_companies(
     """Get companies with latest risk assessment, vulnerability count, and threat statistics"""
     query = db.query(Company)
     if active_only:
-        query = query.filter(Company.is_active == True)
+        query = query.filter(or_(Company.is_active == True, Company.is_active.is_(None)))
         
     is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
     
     if is_admin:
         if filter_by == "global":
-            query = query.filter(Company.is_global == True)
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
         elif filter_by == "my":
             query = query.filter(Company.created_by_user_id == current_user.id)
         elif filter_by == "users":
             query = query.filter(Company.is_global == False)
+        # default: Admin sees ALL companies!
     elif current_user:
         if filter_by == "global":
-            query = query.filter(Company.is_global == True)
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
         elif filter_by == "my":
+            query = query.filter(Company.created_by_user_id == current_user.id, Company.is_global == False)
+        elif filter_by == "users":
             query = query.filter(Company.created_by_user_id == current_user.id, Company.is_global == False)
         else:
             query = query.filter(
                 or_(
                     Company.is_global == True,
+                    Company.is_global.is_(None),
                     Company.created_by_user_id == current_user.id
                 )
             )
     else:
         if filter_by == "global":
-            query = query.filter(Company.is_global == True)
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
         elif filter_by == "users":
             query = query.filter(Company.is_global == False)
+        # default: return all companies
         
     companies_list = query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
     results = []
@@ -247,7 +253,7 @@ async def get_company(
     
     is_admin = bool(current_user and current_user.role and current_user.role.lower() == "admin")
     if not company.is_global and not is_admin:
-        if not current_user or company.created_by_user_id != current_user.id:
+        if current_user and company.created_by_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied: You do not have permission to view this company")
     
     latest_assessment = db.query(CompanyRiskAssessment)\
@@ -429,7 +435,6 @@ async def analyze_company(company_id: int, db: Session = Depends(get_db)):
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     
-    # Run analysis
     analysis_result = await domain_service.analyze_domain(company.domain)
     
     vuln_count = analysis_result.get("total_vulnerabilities") or len(analysis_result.get("vulnerabilities", [])) or analysis_result.get("nvd_data", {}).get("total_vulnerabilities", 0)
@@ -449,7 +454,6 @@ async def analyze_company(company_id: int, db: Session = Depends(get_db)):
     )
     db.add(risk_assessment)
     
-    # Refresh threats
     db.query(CompanyThreat).filter(CompanyThreat.company_id == company_id).delete()
     for threat_data in analysis_result.get("threats", []):
         threat = CompanyThreat(
@@ -464,6 +468,7 @@ async def analyze_company(company_id: int, db: Session = Depends(get_db)):
         db.add(threat)
     
     company.last_analyzed = datetime.utcnow()
+    company.is_active = True
     db.commit()
     db.refresh(risk_assessment)
     
@@ -505,7 +510,6 @@ async def get_company_analysis(company_id: int, refresh: bool = False, db: Sessi
             except Exception:
                 pass
     
-    # Run fresh live analysis
     analysis_result = await domain_service.analyze_domain(company.domain)
     return {
         "company_id": company_id,

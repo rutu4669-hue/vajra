@@ -63,6 +63,7 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by_user_email VARCHAR;"))
                 conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_global BOOLEAN DEFAULT TRUE;"))
                 conn.execute(text("UPDATE companies SET is_global = TRUE WHERE is_global IS NULL;"))
+                conn.execute(text("UPDATE companies SET is_active = TRUE WHERE is_active IS NULL;"))
                 
                 conn.commit()
                 logger.info("Database table columns verified/migrated successfully")

@@ -10,15 +10,18 @@ export interface PlatformNotification {
   timestamp: string
   is_read: boolean
   link?: string
+  article?: any
 }
 
 interface NotificationState {
   notifications: PlatformNotification[]
   unreadCount: number
-  addNotification: (notif: Omit<PlatformNotification, 'id' | 'timestamp' | 'is_read'>) => void
+  activeToast: PlatformNotification | null
+  addNotification: (notif: Omit<PlatformNotification, 'id' | 'timestamp' | 'is_read'>, triggerToast?: boolean) => void
   markAsRead: (id: string) => void
   markAllAsRead: () => void
   clearAll: () => void
+  dismissToast: () => void
   generateLiveTelemetryAlerts: () => void
 }
 
@@ -70,7 +73,7 @@ const DEFAULT_INITIAL_NOTIFICATIONS: PlatformNotification[] = [
     type: 'COMPANY_RISK',
     severity: 'INFO',
     timestamp: '3 hours ago',
-    is_read: true,
+    is_read: false,
     link: '/companies'
   }
 ]
@@ -79,9 +82,10 @@ export const useNotificationStore = create<NotificationState>()(
   persist(
     (set, get) => ({
       notifications: DEFAULT_INITIAL_NOTIFICATIONS,
-      unreadCount: DEFAULT_INITIAL_NOTIFICATIONS.filter(n => !n.is_read).length,
+      unreadCount: DEFAULT_INITIAL_NOTIFICATIONS.length,
+      activeToast: null,
 
-      addNotification: (notif) => {
+      addNotification: (notif, triggerToast = true) => {
         const newNotif: PlatformNotification = {
           ...notif,
           id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -89,12 +93,23 @@ export const useNotificationStore = create<NotificationState>()(
           is_read: false,
         }
         set((state) => {
+          // Avoid duplicate notifications with same title
+          const isDuplicate = state.notifications.some(
+            (n) => n.title.toLowerCase() === newNotif.title.toLowerCase()
+          )
+          if (isDuplicate) return state
+
           const updated = [newNotif, ...state.notifications].slice(0, 50)
           return {
             notifications: updated,
             unreadCount: updated.filter((n) => !n.is_read).length,
+            activeToast: triggerToast ? newNotif : state.activeToast,
           }
         })
+      },
+
+      dismissToast: () => {
+        set({ activeToast: null })
       },
 
       markAsRead: (id: string) => {
@@ -120,11 +135,10 @@ export const useNotificationStore = create<NotificationState>()(
       },
 
       clearAll: () => {
-        set({ notifications: [], unreadCount: 0 })
+        set({ notifications: [], unreadCount: 0, activeToast: null })
       },
 
       generateLiveTelemetryAlerts: () => {
-        // Can be called periodically to simulate incoming real-time telemetry events
         const sampleAlerts = [
           {
             title: '🚨 New Ransomware Surge Detected',
@@ -149,11 +163,11 @@ export const useNotificationStore = create<NotificationState>()(
           }
         ]
         const randomAlert = sampleAlerts[Math.floor(Math.random() * sampleAlerts.length)]
-        get().addNotification(randomAlert)
+        get().addNotification(randomAlert, true)
       }
     }),
     {
-      name: 'vajra-notifications-storage',
+      name: 'vajra-notifications-storage-v2',
     }
   )
 )

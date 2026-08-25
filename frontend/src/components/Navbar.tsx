@@ -210,8 +210,8 @@ export default function Navbar() {
                   <div className="flex items-center gap-2">
                     <Radio className="w-4 h-4 text-primary animate-pulse" />
                     <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">{t('notifications', 'Notifications')}</h3>
-                    <span className="text-[10px] px-1.5 py-0.2 bg-primary/15 text-primary rounded-full font-mono font-bold">
-                      {unreadCount} new
+                    <span className="text-[10px] px-2 py-0.5 bg-primary/15 text-primary rounded-full font-mono font-bold">
+                      {unreadCount} unread
                     </span>
                   </div>
                   {unreadCount > 0 && (

@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import PhoenixButton from '@/components/PhoenixButton'
+import NotificationToast from '@/components/NotificationToast'
+import LanguageTranslator from '@/components/LanguageTranslator'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -48,10 +50,11 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        <LanguageTranslator />
+        <NotificationToast />
         {children}
         <PhoenixButton />
       </body>
     </html>
   )
 }
-

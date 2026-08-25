@@ -241,3 +241,19 @@ div[id^="netlify"] {
   z-index: -9999 !important;
 }
 
+/* Hide Google Translate top banner frame & tooltips */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+iframe.goog-te-banner-frame,
+.goog-tooltip,
+.goog-tooltip:hover,
+.goog-text-highlight,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+  visibility: hidden !important;
+}
+body {
+  top: 0px !important;
+}
+

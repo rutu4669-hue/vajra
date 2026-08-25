@@ -17,6 +17,36 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function purgeNetlify() {
+                  const selectors = [
+                    '#netlify-drawer',
+                    'netlify-drawer',
+                    '[data-netlify-drawer]',
+                    'iframe#netlify-drawer',
+                    '.netlify-badge',
+                    '#netlify-badge'
+                  ];
+                  selectors.forEach(sel => {
+                    document.querySelectorAll(sel).forEach(el => el.remove());
+                  });
+                }
+                if (typeof window !== 'undefined') {
+                  purgeNetlify();
+                  window.addEventListener('DOMContentLoaded', purgeNetlify);
+                  window.addEventListener('load', purgeNetlify);
+                  const observer = new MutationObserver(purgeNetlify);
+                  observer.observe(document.documentElement, { childList: true, subtree: true });
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={inter.className}>
         {children}
         <PhoenixButton />
@@ -24,3 +54,4 @@ export default function RootLayout({
     </html>
   )
 }
+

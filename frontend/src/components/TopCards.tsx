@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, RefreshCw, TrendingUp, Globe, Shield, AlertTriangle, Activity, Building2 } from 'lucide-react'
 import { dashboardService } from '../services/dashboard.service'
+import { ransomwareService } from '../services/ransomware.service'
 import { useRouter } from 'next/navigation'
 import { useCompanyStore } from '@/store/companyStore'
+import { useLanguageStore } from '@/store/languageStore'
 
 export default function TopCards() {
   const router = useRouter()
   const { companies, fetchCompanies } = useCompanyStore()
+  const { t } = useLanguageStore()
   const [summary, setSummary] = useState<any>({
     total_attacks: 12847,
     active_threat_actors: 395,
@@ -23,12 +26,22 @@ export default function TopCards() {
     const fetchData = async () => {
       try {
         setIsUpdating(true)
-        const [summaryData] = await Promise.allSettled([
+        const [summaryData, rStats] = await Promise.allSettled([
           dashboardService.getSummary(),
+          ransomwareService.getStats(),
           fetchCompanies()
         ])
-        if (isMounted && summaryData.status === 'fulfilled' && summaryData.value) {
-          setSummary(summaryData.value)
+        if (isMounted) {
+          let updatedObj = { ...summary }
+          if (summaryData.status === 'fulfilled' && summaryData.value) {
+            updatedObj = { ...updatedObj, ...summaryData.value }
+          }
+          if (rStats.status === 'fulfilled' && rStats.value) {
+            if (rStats.value.groupsCount || rStats.value.activeGroups) {
+              updatedObj.active_threat_actors = rStats.value.groupsCount || rStats.value.activeGroups || 395
+            }
+          }
+          setSummary(updatedObj)
         }
       } catch (error) {
         console.error('Error fetching dashboard summary:', error)
@@ -38,45 +51,11 @@ export default function TopCards() {
     }
 
     fetchData()
-
-    // Polling for live updates every 15 seconds
     const pollingInterval = setInterval(fetchData, 15000)
-
-    // Optional WebSocket connection for real-time live events
-    let ws: WebSocket | null = null
-    try {
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL
-      if (wsUrl && typeof window !== 'undefined') {
-        ws = new WebSocket(wsUrl)
-        ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data)
-            if (message.type === 'dashboard_update' && isMounted) {
-              setSummary((prev: any) => ({
-                ...prev,
-                total_attacks: message.total_attacks || prev.total_attacks,
-                active_threat_actors: message.active_threat_actors || prev.active_threat_actors,
-                critical_attacks: message.critical_attacks || prev.critical_attacks,
-                last_updated: message.last_updated || prev.last_updated
-              }))
-            }
-          } catch (err) {
-            // Ignore parse errors
-          }
-        }
-      }
-    } catch (wsErr) {
-      // Ignore ws connection errors
-    }
 
     return () => {
       isMounted = false
       clearInterval(pollingInterval)
-      if (ws) {
-        try {
-          ws.close()
-        } catch (e) {}
-      }
     }
   }, [fetchCompanies])
 
@@ -84,7 +63,7 @@ export default function TopCards() {
 
   const cards = [
     {
-      label: 'Monitored Companies',
+      label: t('monitoredCompanies', 'Monitored Companies'),
       value: `${monitoredCount} ACTIVE`,
       subtext: 'View & Manage Portfolio →',
       icon: Building2,
@@ -93,7 +72,7 @@ export default function TopCards() {
       path: '/companies',
     },
     {
-      label: 'Last Updated',
+      label: t('lastUpdated', 'Last Updated'),
       value: 'LIVE FEED',
       subtext: 'Real-time telemetry active',
       icon: RefreshCw,
@@ -102,7 +81,7 @@ export default function TopCards() {
       path: '/updates',
     },
     {
-      label: 'Global Attacks Today',
+      label: t('globalAttacksToday', 'Global Attacks Today'),
       value: (summary?.total_attacks || 12847).toLocaleString(),
       trend: '↑ 18%',
       subtext: 'Worldwide Threat Pulses',
@@ -112,7 +91,7 @@ export default function TopCards() {
       path: '/global-attacks',
     },
     {
-      label: 'Active Threat Actors',
+      label: t('activeThreatActors', 'Active Threat Actors'),
       value: (summary?.active_threat_actors || 395).toLocaleString(),
       trend: '↑ 12%',
       subtext: 'Monitored APT Groups',

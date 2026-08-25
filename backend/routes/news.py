@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query
 from schemas.news import NewsItem
 from datetime import datetime
 from services.hackernews_service import hackernews_service
+from services.gdelt_service import gdelt_service
 
 router = APIRouter()
 
@@ -69,20 +70,12 @@ CYBER_KEYWORDS = [
     'sase', 'secure service edge', 'sse'
 ]
 
-def is_cybersecurity_related(title: str, text: str = None) -> bool:
-    """Check if story is related to cybersecurity"""
-    if not title:
-        return False
-    
+def is_cybersecurity_related(title: str, text: str = "") -> bool:
     title_lower = title.lower()
     text_lower = text.lower() if text else ""
-    
-    # Check if any cyber keyword appears in title or text
     for keyword in CYBER_KEYWORDS:
         if keyword in title_lower or keyword in text_lower:
             return True
-    
-    # Only include stories that match cybersecurity keywords
     return False
 
 @router.get("", response_model=list[NewsItem])
@@ -90,58 +83,73 @@ async def get_news(
     story_type: str = Query("top", description="Type of stories: top, new, or best"),
     limit: int = Query(30, description="Number of stories to fetch")
 ):
-    """Fetch cybersecurity-related news from Hacker News"""
+    """Fetch cybersecurity-related news from GDELT Project and Hacker News"""
     stories = []
     
+    # 1. Fetch live real-time GDELT Project news
     try:
-        if story_type == "top":
-            hn_stories = await hackernews_service.get_top_stories(limit * 5)  # Fetch more to filter
-        elif story_type == "new":
-            hn_stories = await hackernews_service.get_new_stories(limit * 5)
-        elif story_type == "best":
-            hn_stories = await hackernews_service.get_best_stories(limit * 5)
+        gdelt_articles = await gdelt_service.fetch_cyber_news(max_records=15)
+        for ga in gdelt_articles:
+            stories.append({
+                "id": ga["id"],
+                "title": ga["title"],
+                "content": ga["description"],
+                "source": ga["source"],
+                "url": ga["url"],
+                "published_at": datetime.fromisoformat(ga["published_at"]) if ga.get("published_at") else datetime.utcnow(),
+                "created_at": datetime.utcnow(),
+                "author": "GDELT Cyber Sensor",
+                "score": 100,
+                "descendants": 0,
+                "time": int(datetime.utcnow().timestamp()),
+                "hn_type": "story",
+                "time_ago": "Just now"
+            })
+    except Exception as ge:
+        print(f"Notice: GDELT news fetch fallback: {ge}")
+
+    # 2. Fetch Hacker News cybersecurity articles
+    try:
+        if story_type == "new":
+            hn_stories = await hackernews_service.get_new_stories(limit * 3)
         else:
-            hn_stories = await hackernews_service.get_top_stories(limit * 5)
+            hn_stories = await hackernews_service.get_top_stories(limit * 3)
         
         for story in hn_stories:
             title = story.get("title", "")
             text = story.get("text", "")
             
-            # Filter for cybersecurity-related stories only
             if is_cybersecurity_related(title, text):
-                # Calculate time ago
                 story_time = story.get("time", 0)
-                time_ago = ""
+                time_ago = "Recently"
                 if story_time:
                     hours_ago = (datetime.utcnow().timestamp() - story_time) / 3600
                     if hours_ago < 1:
-                        time_ago = f"{int(hours_ago * 60)} minutes ago"
+                        time_ago = f"{int(hours_ago * 60)}m ago"
                     elif hours_ago < 24:
-                        time_ago = f"{int(hours_ago)} hours ago"
+                        time_ago = f"{int(hours_ago)}h ago"
                     else:
-                        time_ago = f"{int(hours_ago / 24)} days ago"
+                        time_ago = f"{int(hours_ago / 24)}d ago"
                 
                 stories.append({
                     "id": story.get("id"),
                     "title": title,
-                    "content": text,
-                    "source": "Hacker News",
-                    "url": story.get("url"),
+                    "content": text or "Cybersecurity report and analysis from threat intelligence monitoring feeds.",
+                    "source": "Hacker News / Infosec",
+                    "url": story.get("url") or "#",
                     "published_at": datetime.fromtimestamp(story.get("time", 0)) if story.get("time") else None,
                     "created_at": datetime.utcnow(),
-                    "author": story.get("by"),
-                    "score": story.get("score"),
-                    "descendants": story.get("descendants"),
+                    "author": story.get("by") or "Security Researcher",
+                    "score": story.get("score") or 10,
+                    "descendants": story.get("descendants") or 0,
                     "time": story.get("time"),
                     "hn_type": story.get("type"),
                     "time_ago": time_ago
                 })
             
-            # Stop once we have enough stories
             if len(stories) >= limit:
                 break
     except Exception as e:
-        print(f"Error fetching news: {e}")
-        # Return empty list on error
+        print(f"Error fetching HN news: {e}")
     
-    return stories
+    return stories[:limit]

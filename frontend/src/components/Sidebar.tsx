@@ -18,6 +18,7 @@ import {
   Network,
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
+import { useLanguageStore } from '@/store/languageStore'
 
 interface SidebarProps {
   collapsed: boolean
@@ -31,6 +32,7 @@ export default function Sidebar({ collapsed, setCollapsed, sidebarWidth, setSide
   const [isResizing, setIsResizing] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useLanguageStore()
 
   useEffect(() => {
     if (pathname === '/') setActiveMenu('Dashboard')
@@ -39,6 +41,7 @@ export default function Sidebar({ collapsed, setCollapsed, sidebarWidth, setSide
     else if (pathname === '/executive-summary') setActiveMenu('Executive')
     else if (pathname === '/settings') setActiveMenu('Settings')
     else if (pathname === '/admin') setActiveMenu('Admin')
+    else if (pathname === '/companies') setActiveMenu('Companies')
     else if (pathname === '/domain-analysis') setActiveMenu('Domain')
     else if (pathname === '/threat-intelligence/actors') setActiveMenu('Actors')
     else if (pathname === '/threat-intelligence/industries') setActiveMenu('Industries')
@@ -46,16 +49,17 @@ export default function Sidebar({ collapsed, setCollapsed, sidebarWidth, setSide
   }, [pathname])
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Shield, label: 'Threat Intel', path: '/threat-intelligence' },
-    { icon: AlertTriangle, label: 'Ransomware', path: '/ransomware' },
-    { icon: Users, label: 'Actors', path: '/threat-intelligence/actors' },
-    { icon: Building2, label: 'Industries', path: '/threat-intelligence/industries' },
-    { icon: Activity, label: 'Executive', path: '/executive-summary' },
-    { icon: Globe, label: 'Domain', path: '/domain-analysis' },
-    { icon: Network, label: 'SOC', path: '/soc-integration' },
-    { icon: Users, label: 'Admin', path: '/admin' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: LayoutDashboard, label: t('dashboard', 'Dashboard'), key: 'Dashboard', path: '/' },
+    { icon: Building2, label: t('companyMonitor', 'Companies'), key: 'Companies', path: '/companies' },
+    { icon: Shield, label: t('threatIntelligence', 'Threat Intel'), key: 'Threat Intel', path: '/threat-intelligence' },
+    { icon: AlertTriangle, label: t('ransomwareLive', 'Ransomware'), key: 'Ransomware', path: '/ransomware' },
+    { icon: Users, label: t('threatActors', 'Actors'), key: 'Actors', path: '/threat-intelligence/actors' },
+    { icon: Building2, label: t('targetedIndustries', 'Industries'), key: 'Industries', path: '/threat-intelligence/industries' },
+    { icon: Globe, label: t('domainPulse', 'Domain Pulse'), key: 'Domain', path: '/domain-analysis' },
+    { icon: Activity, label: t('executiveSummary', 'Executive'), key: 'Executive', path: '/executive-summary' },
+    { icon: Network, label: 'SOC Connect', key: 'SOC', path: '/soc-integration' },
+    { icon: Users, label: t('adminCenter', 'Admin'), key: 'Admin', path: '/admin' },
+    { icon: Settings, label: t('settings', 'Settings'), key: 'Settings', path: '/settings' },
   ]
 
   const handleMenuClick = (item: any) => {
@@ -136,7 +140,7 @@ export default function Sidebar({ collapsed, setCollapsed, sidebarWidth, setSide
               <button
                 onClick={() => handleMenuClick(item)}
                 className={`flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                  activeMenu === item.label
+                  activeMenu === item.key || activeMenu === item.label
                     ? 'bg-primary text-white shadow-glow glow-hover'
                     : 'text-foreground hover:bg-card-hover hover:text-primary hover:shadow-glow'
                 }`}

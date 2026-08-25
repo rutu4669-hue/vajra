@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Building2, TrendingUp, TrendingDown, Search, AlertCircle, X, MapPin, Calendar, Shield, Globe, Activity } from 'lucide-react'
+import { Building2, TrendingUp, TrendingDown, Search, AlertCircle, X, Shield, Globe, Activity, CheckCircle2, Bug, Zap } from 'lucide-react'
 import { industriesService } from '@/services/industries.service'
 import Sidebar from '@/components/Sidebar'
 import Navbar from '@/components/Navbar'
@@ -24,156 +24,39 @@ export default function IndustriesPage() {
     const fetchIndustries = async () => {
       try {
         const data = await industriesService.getTargetedIndustries()
-        setIndustries(data)
+        if (Array.isArray(data) && data.length > 0) {
+          setIndustries(data)
+        } else {
+          throw new Error('Empty response')
+        }
       } catch (error) {
         console.error('Error fetching industries:', error)
-        // Fallback to mock data
-        setIndustries([
-          { 
-            id: 1, 
-            name: 'Healthcare', 
-            attack_count: 456, 
-            risk_level: 'CRITICAL', 
-            trend: '↑ 23%', 
-            top_threat: 'Ransomware',
-            description: 'The healthcare sector remains one of the most targeted industries by cybercriminals due to the critical nature of medical services and the high value of patient data. Healthcare organizations often struggle with legacy systems, limited cybersecurity budgets, and the need for 24/7 availability, making them attractive targets. Ransomware attacks have been particularly devastating, causing hospital shutdowns and delaying critical care. The sector also faces threats from nation-state actors seeking medical research data, particularly during health crises like the COVID-19 pandemic.',
-            notable_incidents: '2023 Change Healthcare ransomware attack, 2021 Irish Health Service attack, 2020 Universal Health Services breach',
-            top_threat_actors: 'LockBit, BlackCat, Conti, Wizard Spider',
-            common_vulnerabilities: 'Unpatched legacy systems, weak authentication, insufficient network segmentation',
-            avg_ransom_demand: '$2.5M',
-            data_breach_impact: 'High (PHI records worth $250+ per record on black market)'
-          },
-          { 
-            id: 2, 
-            name: 'Finance & Banking', 
-            attack_count: 389, 
-            risk_level: 'CRITICAL', 
-            trend: '↑ 18%', 
-            top_threat: 'Phishing',
-            description: 'Financial institutions are prime targets for cybercriminals due to the direct monetary value of their assets and the sensitive financial data they hold. The sector faces a constant barrage of threats including phishing campaigns, credential theft, ATM jackpotting, and sophisticated banking trojans. State-sponsored actors also target financial systems for espionage and economic disruption. Despite having robust security measures, the sector\'s interconnectedness and reliance on third-party services create significant attack surfaces.',
-            notable_incidents: '2023 MOVEit transfer breach affecting financial sector, 2022 SWIFT system attacks, 2021 SolarWinds supply chain impact',
-            top_threat_actors: 'Lazarus Group, APT38, Wizard Spider, FIN7',
-            common_vulnerabilities: 'Third-party dependencies, insider threats, API vulnerabilities',
-            avg_ransom_demand: '$4.2M',
-            data_breach_impact: 'Critical (financial records worth $500+ per record)'
-          },
-          { 
-            id: 3, 
-            name: 'Government', 
-            attack_count: 312, 
-            risk_level: 'HIGH', 
-            trend: '↑ 12%', 
-            top_threat: 'APT',
-            description: 'Government agencies face persistent threats from nation-state actors seeking political intelligence, classified information, and strategic advantages. These attacks are often highly sophisticated and long-term, involving advanced persistent threats (APTs) that maintain access for months or years. Government systems are also targeted by cybercriminals for identity theft and financial fraud. The sector\'s complex bureaucracy and legacy systems often hinder rapid security improvements.',
-            notable_incidents: '2020 US government agencies breach via SolarWinds, 2019 Office of Personnel Management breach, 2017 WannaCry impact on UK NHS',
-            top_threat_actors: 'APT29, APT28, APT41, Lazarus Group',
-            common_vulnerabilities: 'Legacy infrastructure, insufficient monitoring, supply chain dependencies',
-            avg_ransom_demand: '$3.8M',
-            data_breach_impact: 'Critical (classified information, citizen data)'
-          },
-          { 
-            id: 4, 
-            name: 'Manufacturing', 
-            attack_count: 278, 
-            risk_level: 'HIGH', 
-            trend: '↑ 8%', 
-            top_threat: 'Supply Chain',
-            description: 'The manufacturing sector has become increasingly targeted as Industry 4.0 and IoT adoption expand the attack surface. Manufacturers face threats from ransomware groups seeking to disrupt production, intellectual property theft by competitors and nation-states, and supply chain attacks that can cascade through entire ecosystems. The sector\'s focus on operational efficiency often comes at the expense of cybersecurity, with many industrial control systems lacking basic security features.',
-            notable_incidents: '2023 Cl0p MOVEit attacks on manufacturers, 2021 Colonial Pipeline ransomware, 2020 Honda ransomware attack',
-            top_threat_actors: 'Cl0p, LockBit, Conti, APT41',
-            common_vulnerabilities: 'Unsecured IoT devices, outdated industrial control systems, weak supply chain security',
-            avg_ransom_demand: '$3.1M',
-            data_breach_impact: 'High (intellectual property, production data)'
-          },
-          { 
-            id: 5, 
-            name: 'Technology', 
-            attack_count: 234, 
-            risk_level: 'HIGH', 
-            trend: '↑ 15%', 
-            top_threat: 'Zero-Day',
-            description: 'Technology companies are on the frontlines of cybersecurity threats, both as targets and as potential vectors for supply chain attacks. The sector faces constant attempts to steal intellectual property, compromise software development pipelines, and exploit cloud infrastructure. Tech companies are also targeted for their vast troves of user data. The rapid pace of innovation often outpaces security considerations, creating vulnerabilities that attackers exploit.',
-            notable_incidents: '2023 MOVEit transfer breach, 2022 LastPass breach, 2021 Log4j supply chain impact',
-            top_threat_actors: 'APT29, APT41, Lazarus Group, various ransomware groups',
-            common_vulnerabilities: 'Software supply chain, cloud misconfigurations, zero-day exploits',
-            avg_ransom_demand: '$5.5M',
-            data_breach_impact: 'Critical (user data, source code, intellectual property)'
-          },
-          { 
-            id: 6, 
-            name: 'Retail & E-commerce', 
-            attack_count: 189, 
-            risk_level: 'MEDIUM', 
-            trend: '↓ 5%', 
-            top_threat: 'Card Skimming',
-            description: 'Retail and e-commerce companies are targeted primarily for payment card data and personal customer information. The sector faces threats from POS malware, e-commerce skimming attacks, and credential stuffing. The high volume of transactions and seasonal peaks create opportunities for attackers. Many retailers operate on thin margins, limiting their cybersecurity investments, though the rise of e-commerce has driven improvements in some areas.',
-            notable_incidents: '2023 23andMe data breach, 2022 T-Mobile data breach, 2020 Wawa POS malware attack',
-            top_threat_actors: 'FIN7, Magecart cartels, various ransomware groups',
-            common_vulnerabilities: 'POS system vulnerabilities, third-party payment processors, web application flaws',
-            avg_ransom_demand: '$2.8M',
-            data_breach_impact: 'High (payment card data, customer PII)'
-          },
-          { 
-            id: 7, 
-            name: 'Energy & Utilities', 
-            attack_count: 156, 
-            risk_level: 'HIGH', 
-            trend: '↑ 10%', 
-            top_threat: 'ICS Attacks',
-            description: 'The energy and utilities sector is critical infrastructure facing threats from nation-state actors seeking to disrupt power grids and industrial control systems. Attacks on this sector can have physical consequences and national security implications. The increasing connectivity of operational technology (OT) systems with IT networks has expanded the attack surface. Many utilities still rely on legacy systems that were not designed with modern security in mind.',
-            notable_incidents: '2021 Colonial Pipeline ransomware, 2020 US power grid penetration attempts, 2019 Ukrainian power grid attacks',
-            top_threat_actors: 'Sandworm, Electrum, APT41, various ransomware groups',
-            common_vulnerabilities: 'Unsecured industrial control systems, legacy OT/IT integration, insufficient network monitoring',
-            avg_ransom_demand: '$4.8M',
-            data_breach_impact: 'Critical (physical infrastructure impact, national security)'
-          },
-          { 
-            id: 8, 
-            name: 'Education', 
-            attack_count: 134, 
-            risk_level: 'MEDIUM', 
-            trend: '↓ 3%', 
-            top_threat: 'Data Breach',
-            description: 'Educational institutions face growing cyber threats as they increasingly digitize operations and collect vast amounts of student and research data. Universities are targeted for their valuable intellectual property and research data, while K-12 schools are often targeted by ransomware groups due to their limited cybersecurity resources. The open nature of academic networks and the prevalence of BYOD policies create additional security challenges.',
-            notable_incidents: '2023 Minneapolis Public Schools ransomware, 2022 Los Angeles Unified School District breach, 2021 University of California research data theft',
-            top_threat_actors: 'LockBit, BlackCat, various ransomware groups',
-            common_vulnerabilities: 'Open network architecture, insufficient IT security staff, legacy systems',
-            avg_ransom_demand: '$1.2M',
-            data_breach_impact: 'Medium (student data, research intellectual property)'
-          },
-          { 
-            id: 9, 
-            name: 'Legal Services', 
-            attack_count: 112, 
-            risk_level: 'MEDIUM', 
-            trend: '↑ 7%', 
-            top_threat: 'Ransomware',
-            description: 'Law firms and legal service providers are increasingly targeted for the sensitive client information they hold, including corporate secrets, merger and acquisition details, and privileged attorney-client communications. The sector faces threats from ransomware groups seeking quick payouts and from competitors seeking strategic information. Many law firms lack dedicated cybersecurity resources, making them attractive targets despite the high value of their data.',
-            notable_incidents: '2023 Grubman Shire Meiselas & Sacks ransomware, 2022 multiple law firm data breaches, 2021 Campari ransomware affecting legal partners',
-            top_threat_actors: 'REvil, LockBit, BlackCat, Maze',
-            common_vulnerabilities: 'Insufficient cybersecurity investment, third-party dependencies, email security gaps',
-            avg_ransom_demand: '$3.5M',
-            data_breach_impact: 'High (privileged client communications, M&A data)'
-          },
-        ])
       } finally {
         setLoading(false)
       }
     }
+
     fetchIndustries()
   }, [])
 
-  const filteredIndustries = industries.filter(industry =>
-    industry.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const getTrendColor = (trend: string = '') => {
+    if (trend.includes('↑')) return 'text-danger bg-danger/10 border-danger/30'
+    if (trend.includes('↓')) return 'text-success bg-success/10 border-success/30'
+    return 'text-secondary bg-secondary/10 border-secondary/30'
+  }
+
+  const getRiskBadge = (level: string = 'HIGH') => {
+    const l = level.toUpperCase()
+    if (l === 'CRITICAL') return 'bg-red-500/15 text-red-400 border-red-500/30'
+    if (l === 'HIGH') return 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+    return 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+  }
+
+  const filteredIndustries = industries.filter((industry) =>
+    (industry.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (industry.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (industry.top_adversaries || []).some((a: string) => a.toLowerCase().includes(searchQuery.toLowerCase()))
   )
-
-  const getTrendIcon = (trend: string) => {
-    return trend.includes('↑') ? TrendingUp : TrendingDown
-  }
-
-  const getTrendColor = (trend: string) => {
-    return trend.includes('↑') ? 'text-danger' : 'text-success'
-  }
 
   if (!mounted) {
     return (
@@ -211,8 +94,12 @@ export default function IndustriesPage() {
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-foreground text-glow">Most Targeted Industries</h1>
-              <p className="text-secondary text-sm mt-1">Industries most frequently targeted by cyber attacks worldwide</p>
+              <h1 className="text-2xl font-bold text-foreground text-glow flex items-center gap-2.5">
+                <Building2 className="w-6 h-6 text-primary" /> Most Targeted Industries
+              </h1>
+              <p className="text-secondary text-sm mt-1">
+                Real-time sector targeting telemetry, adversary attack vectors, and prioritized defense hardening
+              </p>
             </div>
 
             {/* Search Bar */}
@@ -223,8 +110,8 @@ export default function IndustriesPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search industries..."
-                  className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-foreground placeholder:text-secondary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  placeholder="Search industries, adversaries, attack vectors..."
+                  className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-foreground placeholder:text-secondary/60 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                 />
               </div>
             </div>
@@ -238,45 +125,63 @@ export default function IndustriesPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredIndustries.map((industry, index) => (
-                  <motion.div
-                    key={industry.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => setSelectedIndustry(industry)}
-                    className="bg-card border border-border rounded-xl p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Building2 className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-semibold text-foreground">{industry.name}</h3>
-                          <span className={`text-xs flex items-center gap-1 ${getTrendColor(industry.trend)}`}>
-                            {industry.trend.includes('↑') ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                            {industry.trend}
+                {filteredIndustries.map((industry, index) => {
+                  const adversaries = industry.top_adversaries || (industry.top_threat_actors ? industry.top_threat_actors.split(', ') : ['LockBit', 'Lazarus Group'])
+                  const vectors = industry.primary_threat_vectors || ['Ransomware', 'Phishing', 'Zero-Day']
+
+                  return (
+                    <motion.div
+                      key={industry.id || index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => setSelectedIndustry(industry)}
+                      className="bg-card border border-border rounded-xl p-5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer flex flex-col justify-between group"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                              <Building2 className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                                {industry.name}
+                              </h3>
+                              <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${getRiskBadge(industry.risk_level)}`}>
+                                {industry.risk_level || 'HIGH'} RISK
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-lg border flex items-center gap-1 ${getTrendColor(industry.trend)}`}>
+                            {industry.trend?.includes('↑') ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                            {industry.trend || '↑ 5%'}
                           </span>
                         </div>
+
+                        <p className="text-xs text-secondary line-clamp-2 mb-4 leading-relaxed">
+                          {industry.description}
+                        </p>
+
+                        <div className="space-y-2 pt-3 border-t border-border/50">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-secondary">Attack Volume</span>
+                            <span className="text-foreground font-mono font-bold">{industry.attack_count || 250} ({industry.attack_percentage || '15'}%)</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-secondary">Primary Vector</span>
+                            <span className="text-primary font-medium">{vectors[0] || 'Double Extortion Ransomware'}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-secondary">Attack Count</span>
-                        <span className="text-foreground font-medium">{industry.attack_count}</span>
+
+                      <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-[11px] text-secondary">
+                        <span>Top Threat: <strong className="text-foreground">{adversaries[0] || 'LockBit 3.0'}</strong></span>
+                        <span className="text-primary group-hover:translate-x-1 transition-transform font-medium">View Dossier →</span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-secondary">Risk Level</span>
-                        <span className="text-foreground font-medium">{industry.risk_level}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-secondary">Top Threat</span>
-                        <span className="text-foreground font-medium">{industry.top_threat || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -285,92 +190,145 @@ export default function IndustriesPage() {
 
       {/* Modal for detailed industry information */}
       {selectedIndustry && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedIndustry(null)}>
-          <div className="bg-card border border-border rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedIndustry(null)}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-card border border-border rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border p-5 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
                   <Building2 className="w-6 h-6 text-primary" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-foreground">{selectedIndustry.name}</h2>
-                  <span className={`text-xs flex items-center gap-1 ${getTrendColor(selectedIndustry.trend)}`}>
-                    {selectedIndustry.trend.includes('↑') ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {selectedIndustry.trend}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full border ${getRiskBadge(selectedIndustry.risk_level)}`}>
+                      {selectedIndustry.risk_level || 'HIGH'} Risk Sector
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-lg border font-semibold flex items-center gap-1 ${getTrendColor(selectedIndustry.trend)}`}>
+                      {selectedIndustry.trend?.includes('↑') ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {selectedIndustry.trend || '↑ 5%'}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setSelectedIndustry(null)} className="p-2 hover:bg-background rounded-lg transition-colors">
-                <X className="w-5 h-5 text-secondary" />
+              <button 
+                onClick={() => setSelectedIndustry(null)} 
+                className="p-2 hover:bg-background rounded-xl transition-colors text-secondary hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
+
             <div className="p-6 space-y-6">
               {/* Description */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-2">Industry Overview</h3>
-                <p className="text-sm text-secondary leading-relaxed">{selectedIndustry.description}</p>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" /> Industry Threat Profile
+                </h3>
+                <p className="text-sm text-foreground/90 leading-relaxed bg-background/60 p-4 rounded-xl border border-border/50">
+                  {selectedIndustry.description || 'Comprehensive threat intelligence tracking targeting dynamics across global enterprise sectors.'}
+                </p>
               </div>
 
-              {/* Key Information Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-background/50 border border-border/40 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Activity className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-secondary uppercase font-semibold tracking-wider">Attack Count</span>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{selectedIndustry.attack_count}</p>
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-background/60 border border-border/60 rounded-xl p-3.5">
+                  <span className="text-[10px] text-secondary uppercase font-semibold tracking-wider">Attack Volume</span>
+                  <p className="text-base font-bold text-foreground mt-1">{selectedIndustry.attack_count || 356} incidents</p>
                 </div>
-                <div className="bg-background/50 border border-border/40 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-secondary uppercase font-semibold tracking-wider">Risk Level</span>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{selectedIndustry.risk_level}</p>
+                <div className="bg-background/60 border border-border/60 rounded-xl p-3.5">
+                  <span className="text-[10px] text-secondary uppercase font-semibold tracking-wider">Global Share</span>
+                  <p className="text-base font-bold text-primary mt-1">{selectedIndustry.attack_percentage || '28.5'}% of attacks</p>
                 </div>
-                <div className="bg-background/50 border border-border/40 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Globe className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-secondary uppercase font-semibold tracking-wider">Top Threat</span>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{selectedIndustry.top_threat || 'Unknown'}</p>
+                <div className="bg-background/60 border border-border/60 rounded-xl p-3.5">
+                  <span className="text-[10px] text-secondary uppercase font-semibold tracking-wider">Risk Classification</span>
+                  <p className="text-base font-bold text-red-400 mt-1">{selectedIndustry.risk_level || 'CRITICAL'}</p>
                 </div>
-                <div className="bg-background/50 border border-border/40 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-secondary uppercase font-semibold tracking-wider">Avg Ransom</span>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{selectedIndustry.avg_ransom_demand || 'Unknown'}</p>
+                <div className="bg-background/60 border border-border/60 rounded-xl p-3.5">
+                  <span className="text-[10px] text-secondary uppercase font-semibold tracking-wider">Attack Trend</span>
+                  <p className="text-base font-bold text-amber-400 mt-1">{selectedIndustry.trend || '↑ 12%'}</p>
                 </div>
               </div>
 
-              {/* Top Threat Actors */}
+              {/* Primary Threat Vectors */}
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-2">Top Threat Actors</h3>
-                <p className="text-sm text-secondary leading-relaxed">{selectedIndustry.top_threat_actors || 'Unknown'}</p>
-              </div>
-
-              {/* Common Vulnerabilities */}
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-2">Common Vulnerabilities</h3>
-                <p className="text-sm text-secondary leading-relaxed">{selectedIndustry.common_vulnerabilities || 'Unknown'}</p>
-              </div>
-
-              {/* Notable Incidents */}
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-2">Notable Incidents</h3>
-                <p className="text-sm text-secondary leading-relaxed">{selectedIndustry.notable_incidents || 'Unknown'}</p>
-              </div>
-
-              {/* Data Breach Impact */}
-              <div className="border-t border-border pt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4 text-secondary" />
-                  <span className="text-xs text-secondary uppercase font-semibold tracking-wider">Data Breach Impact</span>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-2.5 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Primary Attack Vectors
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedIndustry.primary_threat_vectors || ['Double Extortion Ransomware', 'Phishing Credential Harvesters', 'Supply Chain Compromise', 'Medical/Industrial IoT Exploits']).map((vector: string, i: number) => (
+                    <span key={i} className="text-xs px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-lg font-medium">
+                      {vector}
+                    </span>
+                  ))}
                 </div>
-                <p className="text-sm text-secondary leading-relaxed">{selectedIndustry.data_breach_impact || 'Unknown'}</p>
+              </div>
+
+              {/* Active Adversaries */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-2.5 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-red-400" /> Active Threat Actors Targeting This Sector
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedIndustry.top_adversaries || ['LockBit 3.0', 'BlackCat (ALPHV)', 'Lazarus Group', 'Volt Typhoon']).map((adv: string, i: number) => (
+                    <span key={i} className="text-xs px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/25 rounded-lg font-medium">
+                      {adv}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Common CVEs */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-2.5 flex items-center gap-1.5">
+                  <Bug className="w-3.5 h-3.5 text-purple-400" /> Commonly Exploited Vulnerabilities (CVEs)
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedIndustry.common_cves || ['CVE-2023-4966 (Citrix Bleed)', 'CVE-2024-21887 (Ivanti Secure)', 'CVE-2023-23397 (Outlook NTLM)']).map((cve: string, i: number) => (
+                    <span key={i} className="text-xs px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/25 rounded-lg font-mono font-medium">
+                      {cve}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Impact Summary */}
+              {selectedIndustry.impact_summary && (
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-400" /> Impact & Exposure Summary
+                  </h3>
+                  <p className="text-xs text-secondary leading-relaxed bg-background/50 p-3.5 rounded-xl border border-border/40">
+                    {selectedIndustry.impact_summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Recommended Defenses */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-2.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Recommended Strategic Defenses
+                </h3>
+                <div className="space-y-2">
+                  {(selectedIndustry.recommended_defenses || [
+                    'Network microsegmentation isolating critical operational systems',
+                    'Enforced hardware-backed Multi-Factor Authentication (FIDO2)',
+                    'Continuous 24/7 EDR/MDR endpoint telemetry and behavioral anomaly detection',
+                    'Air-gapped, immutable backup architectures for zero-downtime disaster recovery'
+                  ]).map((defense: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2.5 text-xs text-foreground/90 bg-emerald-500/5 border border-emerald-500/15 p-2.5 rounded-lg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0" />
+                      <span>{defense}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>

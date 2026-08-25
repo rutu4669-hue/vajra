@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
+import { useCompanyStore } from '@/store/companyStore'
 import Sidebar from '@/components/Sidebar'
 import Navbar from '@/components/Navbar'
 import { motion } from 'framer-motion'
@@ -111,7 +112,10 @@ export default function AdminDashboard() {
       const response = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers })
       if (response.ok) {
         const data = await response.json()
-        setCompanies(data)
+        if (Array.isArray(data)) {
+          setCompanies(data)
+          useCompanyStore.getState().setCompanies(data)
+        }
       }
     } catch (error) {
       console.error('Error fetching companies:', error)

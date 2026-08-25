@@ -118,6 +118,7 @@ export default function CompaniesPage() {
         const data = await res.json()
         if (Array.isArray(data)) {
           setCompanies(data)
+          useCompanyStore.getState().setCompanies(data)
         }
       }
     } catch (err) {
@@ -177,6 +178,7 @@ export default function CompaniesPage() {
         is_global: isAdmin
       })
       setCompanies(prev => [newCompany, ...prev.filter(c => c.id !== newCompany.id)])
+      useCompanyStore.getState().addCompanyToStore(newCompany)
       fetchCompanies()
       setTimeout(() => fetchCompanies(), 2000)
       setTimeout(() => fetchCompanies(), 5000)

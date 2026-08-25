@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { useAuthStore } from './authStore'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vajra-9pjh.onrender.com'
@@ -38,34 +39,50 @@ interface CompanyStore {
   companies: CompanyWithDetails[]
   setSelectedCompany: (company: CompanyWithDetails | null) => void
   setCompanies: (companies: CompanyWithDetails[]) => void
+  addCompanyToStore: (company: CompanyWithDetails) => void
   fetchCompanies: () => Promise<void>
 }
 
-export const useCompanyStore = create<CompanyStore>((set) => ({
-  selectedCompany: null,
-  companies: [],
-  
-  setSelectedCompany: (company) => set({ selectedCompany: company }),
-  
-  setCompanies: (companies) => set({ companies }),
-  
-  fetchCompanies: async () => {
-    try {
-      const token = useAuthStore.getState().token
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-      const response = await fetch(`${API_URL}/api/companies/`, { headers })
-      if (response.ok) {
-        const data = await response.json()
-        set({ companies: data })
-      }
-    } catch (error) {
-      console.error('Error fetching companies:', error)
-    }
-  }
-}))
+export const useCompanyStore = create<CompanyStore>()(
+  persist(
+    (set, get) => ({
+      selectedCompany: null,
+      companies: [],
+      
+      setSelectedCompany: (company) => set({ selectedCompany: company }),
+      
+      setCompanies: (companies) => set({ companies }),
 
+      addCompanyToStore: (company) => {
+        set((state) => {
+          const filtered = state.companies.filter((c) => c.id !== company.id && c.domain.toLowerCase() !== company.domain.toLowerCase())
+          return { companies: [company, ...filtered] }
+        })
+      },
+      
+      fetchCompanies: async () => {
+        try {
+          const token = useAuthStore.getState().token
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+          }
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+          }
+          const response = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers })
+          if (response.ok) {
+            const data = await response.json()
+            if (Array.isArray(data)) {
+              set({ companies: data })
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching companies in store:', error)
+        }
+      }
+    }),
+    {
+      name: 'vajra-companies-storage',
+    }
+  )
+)

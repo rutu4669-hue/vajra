@@ -96,12 +96,13 @@ async def create_company(
     )
     
     # Determine visibility and creator info
-    if is_admin or company.is_global is True:
-        is_global = True
+    if is_admin:
+        is_global = company.is_global if company.is_global is not None else True
         created_by_id = current_user.id if current_user else None
         created_by_name = current_user.name if current_user else "System Admin"
         created_by_email = current_user.email if current_user else "admin@indigo.com"
     elif current_user:
+        # Regular user companies are ALWAYS private to that user and the admin
         is_global = False
         created_by_id = current_user.id
         created_by_name = current_user.name
@@ -124,8 +125,8 @@ async def create_company(
             existing.industry = company.industry
         if company.description:
             existing.description = company.description
-        if is_admin or company.is_global is True:
-            existing.is_global = True
+        if is_admin:
+            existing.is_global = is_global
         existing.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(existing)
@@ -198,7 +199,9 @@ async def get_companies(
     
     if is_admin:
         if filter_by == "global":
-            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None), Company.created_by_user_email == "admin@indigo.com"))
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
+        elif filter_by == "users":
+            query = query.filter(Company.is_global == False)
         elif filter_by == "my":
             query = query.filter(
                 or_(
@@ -206,13 +209,11 @@ async def get_companies(
                     Company.created_by_user_email == current_user.email
                 )
             )
-        elif filter_by == "users":
-            query = query.filter(and_(Company.is_global == False, Company.created_by_user_email != "admin@indigo.com"))
         # default (None or "all"): Admin sees ALL companies from all users!
     elif current_user:
         if filter_by == "global":
-            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None), Company.created_by_user_email == "admin@indigo.com"))
-        elif filter_by == "my" or filter_by == "users":
+            query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
+        elif filter_by == "my":
             query = query.filter(
                 and_(
                     Company.is_global == False,
@@ -223,25 +224,24 @@ async def get_companies(
                 )
             )
         else:
-            # Default for regular user: see ALL Global admin domains + their own private domains
+            # Default for regular user: see Global admin domains + their OWN private domains only
             query = query.filter(
                 or_(
                     Company.is_global == True,
                     Company.is_global.is_(None),
-                    Company.created_by_user_email == "admin@indigo.com",
-                    Company.created_by_user_id == current_user.id,
-                    Company.created_by_user_email == current_user.email
+                    and_(
+                        Company.created_by_user_id == current_user.id,
+                        Company.created_by_user_id.isnot(None)
+                    ),
+                    and_(
+                        Company.created_by_user_email == current_user.email,
+                        Company.created_by_user_email.isnot(None)
+                    )
                 )
             )
     else:
-        # Default for unauthenticated or public: see all global/system domains
-        query = query.filter(
-            or_(
-                Company.is_global == True,
-                Company.is_global.is_(None),
-                Company.created_by_user_email == "admin@indigo.com"
-            )
-        )
+        # Default for unauthenticated or public: see only global domains
+        query = query.filter(or_(Company.is_global == True, Company.is_global.is_(None)))
         
     companies_list = query.order_by(Company.created_at.desc()).offset(skip).limit(limit).all()
     results = []

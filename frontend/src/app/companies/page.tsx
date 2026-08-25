@@ -457,21 +457,25 @@ export default function CompaniesPage() {
                   </span>
                 </button>
 
-                <button
-                  onClick={() => setActiveTab('users')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
-                    activeTab === 'users'
-                      ? 'bg-primary text-white shadow-md shadow-primary/25'
-                      : 'text-secondary hover:text-foreground'
-                  }`}
-                >
-                  <UserIcon className="w-3.5 h-3.5 text-amber-400" />
-                  User Monitored
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-background text-amber-400 border border-amber-500/20'}`}>
-                    {userAddedCount}
-                  </span>
-                </button>
+                {/* User Monitored Tab - ONLY visible to Admin */}
+                {isAdmin && (
+                  <button
+                    onClick={() => setActiveTab('users')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
+                      activeTab === 'users'
+                        ? 'bg-primary text-white shadow-md shadow-primary/25'
+                        : 'text-secondary hover:text-foreground'
+                    }`}
+                  >
+                    <UserIcon className="w-3.5 h-3.5 text-amber-400" />
+                    User Monitored
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-background text-amber-400 border border-amber-500/20'}`}>
+                      {userAddedCount}
+                    </span>
+                  </button>
+                )}
 
+                {/* My Monitored Tab */}
                 <button
                   onClick={() => setActiveTab('my')}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
@@ -573,15 +577,15 @@ export default function CompaniesPage() {
                         <div className="flex flex-wrap items-center gap-1.5 mb-3">
                           {company.is_global ? (
                             <span className="text-[10px] px-2 py-0.5 bg-blue-500/15 text-blue-400 border border-blue-500/30 rounded-full font-semibold flex items-center gap-1">
-                              <Globe className="w-3 h-3" /> Global
+                              <Globe className="w-3 h-3" /> Global (Admin)
                             </span>
                           ) : isCreatedByCurrentUser ? (
                             <span className="text-[10px] px-2 py-0.5 bg-purple-500/15 text-purple-400 border border-purple-500/30 rounded-full font-semibold flex items-center gap-1">
-                              <UserIcon className="w-3 h-3" /> Monitored
+                              <UserIcon className="w-3 h-3" /> My Monitored
                             </span>
                           ) : (
                             <span className="text-[10px] px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full font-semibold flex items-center gap-1" title={company.created_by_user_email || ''}>
-                              <UserIcon className="w-3 h-3" /> {company.created_by_user_name || 'User'}
+                              <UserIcon className="w-3 h-3" /> User Monitored ({company.created_by_user_name || company.created_by_user_email || 'User'})
                             </span>
                           )}
 

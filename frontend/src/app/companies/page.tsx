@@ -63,12 +63,13 @@ export default function CompaniesPage() {
   const router = useRouter()
   const { user, token } = useAuthStore()
   const isAdmin = Boolean(user?.role?.toLowerCase() === 'admin')
+  const storeCompanies = useCompanyStore((state) => state.companies)
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
   const [mounted, setMounted] = useState(false)
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [loading, setLoading] = useState(true)
+  const [companies, setCompanies] = useState<Company[]>(storeCompanies && storeCompanies.length > 0 ? storeCompanies : [])
+  const [loading, setLoading] = useState(storeCompanies && storeCompanies.length > 0 ? false : true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | 'global' | 'my' | 'users'>('all')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -99,6 +100,13 @@ export default function CompaniesPage() {
   }, [])
 
   useEffect(() => {
+    if (storeCompanies && storeCompanies.length > 0 && companies.length === 0) {
+      setCompanies(storeCompanies)
+      setLoading(false)
+    }
+  }, [storeCompanies, companies.length])
+
+  useEffect(() => {
     if (isAdmin) {
       setFormData(prev => ({ ...prev, is_global: true }))
     } else {
@@ -108,14 +116,18 @@ export default function CompaniesPage() {
 
   const fetchCompanies = useCallback(async () => {
     try {
-      setLoading(true)
       const currentToken = useAuthStore.getState().token || token
       const headers: Record<string, string> = {}
       if (currentToken) {
         headers['Authorization'] = `Bearer ${currentToken}`
       }
-      const res = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers })
-      if (res.ok) {
+      
+      let res = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers }).catch(() => null)
+      if (!res || !res.ok) {
+        res = await fetch(`/api/companies/?active_only=true`, { headers }).catch(() => null)
+      }
+
+      if (res && res.ok) {
         const data = await res.json()
         if (Array.isArray(data)) {
           setCompanies(data)
@@ -150,22 +162,32 @@ export default function CompaniesPage() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`
 
-      const res = await fetch(`${API_URL}/api/companies/`, {
+      const payload = {
+        name: formData.name.trim(),
+        domain: cleanDomain,
+        industry: formData.industry || 'Technology',
+        description: formData.description || 'Monitored company asset',
+        monitoring_enabled: true,
+        is_global: isAdmin ? formData.is_global : false,
+      }
+
+      let res = await fetch(`${API_URL}/api/companies/`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          domain: cleanDomain,
-          industry: formData.industry || null,
-          description: formData.description || null,
-          monitoring_enabled: formData.monitoring_enabled,
-          is_global: isAdmin ? formData.is_global : false,
-        }),
-      })
+        body: JSON.stringify(payload),
+      }).catch(() => null)
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null)
-        throw new Error(errData?.detail || 'Failed to add company')
+      if (!res || !res.ok) {
+        res = await fetch(`/api/companies/`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        }).catch(() => null)
+      }
+
+      if (!res || !res.ok) {
+        const errData = res ? await res.json().catch(() => null) : null
+        throw new Error(errData?.detail || 'Failed to add company. Please verify the domain and try again.')
       }
 
       const newCompany = await res.json()

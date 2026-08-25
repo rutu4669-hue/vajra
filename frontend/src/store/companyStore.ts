@@ -69,10 +69,13 @@ export const useCompanyStore = create<CompanyStore>()(
           if (token) {
             headers['Authorization'] = `Bearer ${token}`
           }
-          const response = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers })
-          if (response.ok) {
+          let response = await fetch(`${API_URL}/api/companies/?active_only=true`, { headers }).catch(() => null)
+          if (!response || !response.ok) {
+            response = await fetch(`/api/companies/?active_only=true`, { headers }).catch(() => null)
+          }
+          if (response && response.ok) {
             const data = await response.json()
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length > 0) {
               set({ companies: data })
             }
           }

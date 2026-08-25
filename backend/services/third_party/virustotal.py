@@ -11,7 +11,7 @@ VIRUSTOTAL_BASE_URL = "https://www.virustotal.com/api/v3"
 
 def get_vt_keys() -> List[str]:
     keys_str = os.getenv("VIRUSTOTAL_API_KEYS", "") or os.getenv("VIRUSTOTAL_API_KEY", "")
-    default_key = "cb8128bd4aee51f23697aa6535be0242e24723847323a0d91a835cada2d697f7"
+    default_key = "609ced7f9205216248b53ee86d58f9a187fdb79fbd73a7a91b8d37979056e470"
     raw_keys = [k.strip() for k in keys_str.split(",") if k.strip() and k.strip() != "your_virustotal_api_key"]
     if not raw_keys:
         raw_keys = [default_key]

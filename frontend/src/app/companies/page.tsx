@@ -682,172 +682,156 @@ export default function CompaniesPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
             onClick={() => setShowAddModal(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl"
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-primary" />
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-background/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-foreground">Add Company</h2>
-                    <p className="text-xs text-secondary">
-                      {isAdmin
-                        ? 'Add a company globally or for specific monitoring'
-                        : 'Add a private company to your personal monitoring portfolio'}
+                    <h2 className="text-base font-bold text-foreground">Add Company</h2>
+                    <p className="text-[11px] text-secondary">
+                      {isAdmin ? 'Global or private telemetry monitoring' : 'Add domain to your private monitoring portfolio'}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="p-2 hover:bg-background rounded-lg transition-colors text-secondary hover:text-foreground"
+                  className="p-1.5 hover:bg-background rounded-lg transition-colors text-secondary hover:text-foreground"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-3.5 overflow-y-auto flex-1">
                 {formError && (
-                  <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                  <div className="flex items-center gap-2 p-2.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {formError}
                   </div>
                 )}
 
-                {/* Company Name */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Company Name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Google LLC"
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-foreground placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                  />
-                </div>
-
-                {/* Domain */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Domain <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary" />
+                {/* Company Name & Domain side by side */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      Company Name <span className="text-red-400">*</span>
+                    </label>
                     <input
                       type="text"
-                      value={formData.domain}
-                      onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                      placeholder="e.g., google.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-lg text-foreground placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-mono"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g. Acme Corp"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-xl text-foreground placeholder:text-secondary/50 focus:outline-none focus:border-primary text-xs"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      Domain <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-secondary" />
+                      <input
+                        type="text"
+                        value={formData.domain}
+                        onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                        placeholder="e.g. acme.com"
+                        className="w-full pl-8 pr-3 py-2 bg-background border border-border rounded-xl text-foreground placeholder:text-secondary/50 focus:outline-none focus:border-primary text-xs font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Industry */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Industry
-                  </label>
-                  <select
-                    value={formData.industry}
-                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                  >
-                    <option value="">Select industry...</option>
-                    {INDUSTRY_OPTIONS.map((ind) => (
-                      <option key={ind} value={ind}>{ind}</option>
-                    ))}
-                  </select>
+                {/* Industry & Visibility */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      Industry Sector
+                    </label>
+                    <select
+                      value={formData.industry}
+                      onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:border-primary text-xs"
+                    >
+                      <option value="">Select industry...</option>
+                      {INDUSTRY_OPTIONS.map((ind) => (
+                        <option key={ind} value={ind}>{ind}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      Visibility Scope
+                    </label>
+                    {isAdmin ? (
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-background border border-border rounded-xl h-[36px]">
+                        <span className="text-xs text-foreground font-medium truncate">
+                          {formData.is_global ? 'Global' : 'Private'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, is_global: !formData.is_global })}
+                          className={`relative w-8 h-4 rounded-full transition-colors ${formData.is_global ? 'bg-primary' : 'bg-secondary/30'}`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${formData.is_global ? 'translate-x-4' : 'translate-x-0'}`}
+                          />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-purple-300 flex items-center gap-1.5 h-[36px]">
+                        <UserIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate">Private Portfolio</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1.5">
-                    Description
+                  <label className="block text-xs font-semibold text-foreground mb-1">
+                    Description (Optional)
                   </label>
-                  <textarea
+                  <input
+                    type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Brief description of the company..."
-                    rows={3}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg text-foreground placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm resize-none"
+                    placeholder="Brief note or description..."
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-foreground placeholder:text-secondary/50 focus:outline-none focus:border-primary text-xs"
                   />
-                </div>
-
-                {/* Admin Global Visibility Option */}
-                {isAdmin ? (
-                  <div className="flex items-center justify-between p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-blue-400" />
-                      <div>
-                        <span className="text-sm text-foreground font-medium block">Global Monitoring (Visible to all users)</span>
-                        <span className="text-[11px] text-secondary">When enabled, all analysts can view this company.</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, is_global: !formData.is_global })}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${formData.is_global ? 'bg-primary' : 'bg-secondary/30'}`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${formData.is_global ? 'translate-x-5' : 'translate-x-0'}`}
-                      />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2">
-                    <UserIcon className="w-4 h-4 flex-shrink-0" />
-                    <span>This company will be added to your <strong>private monitoring portfolio</strong> and will only be visible to you.</span>
-                  </div>
-                )}
-
-                {/* Monitoring Toggle */}
-                <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
-                  <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-foreground">Enable monitoring</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, monitoring_enabled: !formData.monitoring_enabled })}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${formData.monitoring_enabled ? 'bg-primary' : 'bg-secondary/30'}`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${formData.monitoring_enabled ? 'translate-x-5' : 'translate-x-0'}`}
-                    />
-                  </button>
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="flex items-center gap-3 p-6 border-t border-border">
+              {/* Modal Footer - Always Sticky & 100% Visible */}
+              <div className="flex items-center gap-2.5 px-5 py-3.5 border-t border-border bg-background/60">
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-background border border-border rounded-lg text-foreground hover:bg-card-hover transition-colors text-sm font-medium"
+                  className="flex-1 px-4 py-2 bg-card hover:bg-card-hover border border-border rounded-xl text-secondary hover:text-foreground transition-colors text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddCompany}
                   disabled={formSubmitting}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 shadow-lg shadow-primary/25"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors text-xs font-semibold disabled:opacity-50 shadow-md shadow-primary/20"
                 >
                   {formSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                   )}
                   {formSubmitting ? 'Adding...' : 'Add Company'}
                 </button>

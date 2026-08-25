@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import Navbar from '@/components/Navbar'
 import { useAuthStore } from '@/store/authStore'
+import { useCompanyStore } from '@/store/companyStore'
 import {
   Building2, Plus, Search, Globe, Shield, AlertTriangle, Activity,
   TrendingUp, Clock, ChevronRight, X, Loader2, RefreshCw, Trash2,

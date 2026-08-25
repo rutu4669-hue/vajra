@@ -46,7 +46,7 @@ export default function ThreatIntelligencePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await threatService.getThreatIntelligence()
+        const data = await threatService.getIntelligence()
         setThreatData(data)
       } catch (error) {
         console.error('Error fetching threat data:', error)

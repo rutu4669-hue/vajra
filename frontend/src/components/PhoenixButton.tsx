@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bot, X, Send, User, Navigation, Sparkles, Mic, MicOff, Volume2, VolumeX, PlayCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Message {
@@ -238,6 +238,7 @@ export default function PhoenixButton() {
   ])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
 
   const wakeRecognitionRef = useRef<any>(null)
   const commandRecognitionRef = useRef<any>(null)
@@ -532,6 +533,23 @@ export default function PhoenixButton() {
       stopSpeaking()
       setTimeout(() => speakReply(msg.text, msg.id), 100)
     }
+  }
+
+  // Hide AI chat bot completely on login, signup, and authentication pages
+  const isAuthPage = Boolean(
+    pathname && (
+      pathname === '/login' ||
+      pathname === '/signup' ||
+      pathname === '/register' ||
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/signup') ||
+      pathname.startsWith('/register') ||
+      pathname.startsWith('/auth')
+    )
+  )
+
+  if (isAuthPage) {
+    return null
   }
 
   const fabRing = voiceState === 'awake' || voiceState === 'command-listening'

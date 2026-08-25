@@ -20,7 +20,7 @@ interface Company {
   domain: string
   industry: string | null
   description: string | null
-  logo_url: string | null
+  logo_url?: string | null
   monitoring_enabled: boolean
   is_active: boolean
   is_global: boolean
@@ -68,7 +68,7 @@ export default function CompaniesPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
   const [mounted, setMounted] = useState(false)
-  const [companies, setCompanies] = useState<Company[]>(storeCompanies && storeCompanies.length > 0 ? storeCompanies : [])
+  const [companies, setCompanies] = useState<any[]>(storeCompanies && storeCompanies.length > 0 ? storeCompanies : [])
   const [loading, setLoading] = useState(storeCompanies && storeCompanies.length > 0 ? false : true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | 'global' | 'my' | 'users'>('all')

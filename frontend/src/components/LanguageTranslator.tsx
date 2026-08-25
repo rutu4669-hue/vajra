@@ -79,8 +79,11 @@ export default function LanguageTranslator() {
       if (!text || text.trim().length === 0) return text
       if (isEnglish) return text
 
-      // Exact match check
       const trimmed = text.trim()
+      // Protect pure numbers, counts, and stats from accidental translation replacement
+      if (/^[\d\s,.\/+%()\-:]+$/.test(trimmed)) return text
+
+      // Exact match check
       if (dict[trimmed]) {
         return text.replace(trimmed, dict[trimmed])
       }
@@ -88,7 +91,7 @@ export default function LanguageTranslator() {
       // Partial phrase replacement
       let replaced = text
       for (const key of sortedKeys) {
-        if (replaced.includes(key)) {
+        if (key && replaced.includes(key)) {
           replaced = replaced.split(key).join(dict[key])
         }
       }

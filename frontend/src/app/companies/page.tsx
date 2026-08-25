@@ -284,23 +284,28 @@ export default function CompaniesPage() {
   }
 
   const isCompanyGlobal = (c: Company) => {
-    return c.is_global === true || c.is_global === null || c.is_global === undefined || 
-      c.created_by_user_email === 'admin@indigo.com' || 
-      c.created_by_user_name === 'Admin User' || 
-      c.created_by_user_name === 'Admin' || 
-      c.created_by_user_name === 'System' || 
-      c.created_by_user_name === 'System Admin'
+    if (c.is_global === true) return true
+    if (c.created_by_user_email && (c.created_by_user_email === 'admin@indigo.com' || c.created_by_user_email.toLowerCase().includes('admin'))) return true
+    if (c.created_by_user_name && c.created_by_user_name.toLowerCase().includes('admin')) return true
+    if (c.is_global === false) return false
+    return true
+  }
+
+  const isCompanyUserAdded = (c: Company) => {
+    return !isCompanyGlobal(c)
   }
 
   const isCompanyMine = (c: Company) => {
     if (!user) return false
-    return String(c.created_by_user_id) === String(user.id) || (Boolean(c.created_by_user_email) && c.created_by_user_email?.toLowerCase() === user.email?.toLowerCase())
+    if (c.created_by_user_id && user.id && String(c.created_by_user_id) === String(user.id)) return true
+    if (c.created_by_user_email && user.email && c.created_by_user_email.toLowerCase() === user.email.toLowerCase()) return true
+    return false
   }
 
   // Count metrics for tabs
   const globalCount = companies.filter(c => isCompanyGlobal(c)).length
+  const userAddedCount = companies.filter(c => isCompanyUserAdded(c)).length
   const myCount = companies.filter(c => isCompanyMine(c)).length
-  const userAddedCount = companies.filter(c => !isCompanyGlobal(c)).length
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -313,10 +318,10 @@ export default function CompaniesPage() {
 
     if (activeTab === 'global') {
       return isCompanyGlobal(c)
+    } else if (activeTab === 'users') {
+      return isCompanyUserAdded(c)
     } else if (activeTab === 'my') {
       return isCompanyMine(c)
-    } else if (activeTab === 'users') {
-      return !isCompanyGlobal(c)
     }
     return true
   })
@@ -420,11 +425,11 @@ export default function CompaniesPage() {
           {/* Filter Tabs & Search Bar */}
           <div className="space-y-4 mb-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-1.5 p-1 bg-card border border-border rounded-xl">
+                {/* Filter Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-card border border-border rounded-xl flex-wrap">
                 <button
                   onClick={() => setActiveTab('all')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
                     activeTab === 'all'
                       ? 'bg-primary text-white shadow-md shadow-primary/25'
                       : 'text-secondary hover:text-foreground'
@@ -432,14 +437,14 @@ export default function CompaniesPage() {
                 >
                   <Building2 className="w-3.5 h-3.5" />
                   All
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'all' ? 'bg-white/20' : 'bg-background'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-background text-primary border border-primary/20'}`}>
                     {companies.length}
                   </span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('global')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
                     activeTab === 'global'
                       ? 'bg-primary text-white shadow-md shadow-primary/25'
                       : 'text-secondary hover:text-foreground'
@@ -447,14 +452,29 @@ export default function CompaniesPage() {
                 >
                   <Globe className="w-3.5 h-3.5 text-blue-400" />
                   Global (Admin)
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'global' ? 'bg-white/20' : 'bg-background'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${activeTab === 'global' ? 'bg-white/20 text-white' : 'bg-background text-blue-400 border border-blue-500/20'}`}>
                     {globalCount}
                   </span>
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('users')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
+                    activeTab === 'users'
+                      ? 'bg-primary text-white shadow-md shadow-primary/25'
+                      : 'text-secondary hover:text-foreground'
+                  }`}
+                >
+                  <UserIcon className="w-3.5 h-3.5 text-amber-400" />
+                  User Monitored
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-background text-amber-400 border border-amber-500/20'}`}>
+                    {userAddedCount}
+                  </span>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('my')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
                     activeTab === 'my'
                       ? 'bg-primary text-white shadow-md shadow-primary/25'
                       : 'text-secondary hover:text-foreground'
@@ -462,27 +482,10 @@ export default function CompaniesPage() {
                 >
                   <UserIcon className="w-3.5 h-3.5 text-purple-400" />
                   My Monitored
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'my' ? 'bg-white/20' : 'bg-background'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${activeTab === 'my' ? 'bg-white/20 text-white' : 'bg-background text-purple-400 border border-purple-500/20'}`}>
                     {myCount}
                   </span>
                 </button>
-
-                {isAdmin && (
-                  <button
-                    onClick={() => setActiveTab('users')}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                      activeTab === 'users'
-                        ? 'bg-primary text-white shadow-md shadow-primary/25'
-                        : 'text-secondary hover:text-foreground'
-                    }`}
-                  >
-                    <UserIcon className="w-3.5 h-3.5 text-amber-400" />
-                    User Monitored
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'users' ? 'bg-white/20' : 'bg-background'}`}>
-                      {userAddedCount}
-                    </span>
-                  </button>
-                )}
               </div>
 
               {/* Search Bar */}

@@ -435,3 +435,5 @@ export const DICTIONARY: Record<LanguageCode, Record<string, string>> = {
     "Deep Dossier →": "عرض الملف الأمني →"
   }
 }
+
+export const translations = DICTIONARY

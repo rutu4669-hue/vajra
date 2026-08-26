@@ -4,11 +4,12 @@ import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ShieldAlert, Radio, AlertTriangle, X, ExternalLink, ArrowRight } from 'lucide-react'
 import { useNotificationStore } from '@/store/notificationStore'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export default function NotificationToast() {
   const { activeToast, dismissToast, markAsRead } = useNotificationStore()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!activeToast) return
@@ -21,7 +22,7 @@ export default function NotificationToast() {
     return () => clearTimeout(timer)
   }, [activeToast, dismissToast])
 
-  if (!activeToast) return null
+  if (!activeToast || pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/auth')) return null
 
   const getSeverityStyle = (sev: string = 'HIGH') => {
     switch (sev) {

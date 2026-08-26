@@ -179,7 +179,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+          <form onSubmit={handleSubmit} className="space-y-4 relative z-10" autoComplete="off">
             {!isMfaStep ? (
               <>
                 {!isLogin && (
@@ -192,6 +192,10 @@ export default function LoginPage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your name"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
                         className="w-full bg-slate-950/50 backdrop-blur-md border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-slate-950/70 focus:ring-1 focus:ring-blue-400/50 transition-all"
                         required={!isLogin}
                       />
@@ -208,6 +212,10 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       className="w-full bg-slate-950/50 backdrop-blur-md border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-slate-950/70 focus:ring-1 focus:ring-blue-400/50 transition-all"
                       required
                     />
@@ -223,6 +231,10 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
+                      autoComplete="new-password"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       className="w-full bg-slate-950/50 backdrop-blur-md border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-slate-950/70 focus:ring-1 focus:ring-blue-400/50 transition-all"
                       required
                     />
@@ -240,6 +252,10 @@ export default function LoginPage() {
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="Enter 6-digit OTP code"
+                    autoComplete="one-time-code"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     className="w-full bg-slate-950/70 backdrop-blur-md border border-blue-400/50 rounded-xl pl-10 pr-4 py-3 text-lg font-mono text-center tracking-widest text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/50 transition-all"
                     required
                     autoFocus

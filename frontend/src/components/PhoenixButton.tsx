@@ -217,6 +217,8 @@ function getVoiceLabel(state: VoiceState): string {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PhoenixButton() {
+  const pathname = usePathname()
+  
   const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -238,7 +240,6 @@ export default function PhoenixButton() {
   ])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const pathname = usePathname()
 
   const wakeRecognitionRef = useRef<any>(null)
   const commandRecognitionRef = useRef<any>(null)
